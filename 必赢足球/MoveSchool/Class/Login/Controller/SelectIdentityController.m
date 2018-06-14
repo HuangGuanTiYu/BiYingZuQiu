@@ -1,0 +1,114 @@
+//
+//  SelectIdentityController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/7.
+//
+//
+
+#import "SelectIdentityController.h"
+#import "ShareButton.h"
+#import "ApplyTeacherController.h"
+#import "CompanyController.h"
+
+typedef enum
+{
+    IdentityTeacher = 1,
+    IdentityCom = 2
+} IdentityType;
+
+@interface SelectIdentityController ()
+
+@end
+
+@implementation SelectIdentityController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"身份选择";
+
+    [self setUpUI];
+}
+
+- (void) setUpUI
+{
+
+    ShareButton *teacherButton = [[ShareButton alloc] initWithFrame:CGRectMake(0, 40, 165, 180)];
+    [teacherButton addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+    [teacherButton addTarget:self action:@selector(buttonClickDown:) forControlEvents:UIControlEventTouchDown];
+    [teacherButton addTarget:self action:@selector(buttonClickOutside:) forControlEvents:UIControlEventTouchUpOutside];
+    teacherButton.tag = IdentityTeacher;
+    teacherButton.centerX = self.view.width * 0.5;
+    teacherButton.layer.cornerRadius = 5;
+    teacherButton.layer.masksToBounds = YES;
+    teacherButton.layer.borderColor = AuxiliaryColor.CGColor;
+    teacherButton.layer.borderWidth = 1;
+    [teacherButton setTitle:@"讲师" forState:UIControlStateNormal];
+    [teacherButton setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+    [teacherButton setTitleColor:MainColor forState:UIControlStateHighlighted];
+    [teacherButton setImage:[UIImage imageNamed:@"identity_jiangshi"] forState:UIControlStateNormal];
+    [self.view addSubview:teacherButton];
+    
+    ShareButton *comButton = [[ShareButton alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(teacherButton.frame) + 40, 165, 180)];
+    comButton.tag = IdentityCom;
+    [comButton addTarget:self action:@selector(buttonClickDown:) forControlEvents:UIControlEventTouchDown];
+    [comButton addTarget:self action:@selector(buttonClickOutside:) forControlEvents:UIControlEventTouchUpOutside];
+    [comButton addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+    comButton.centerX = self.view.width * 0.5;
+    comButton.layer.cornerRadius = 5;
+    comButton.layer.masksToBounds = YES;
+    comButton.layer.borderColor = AuxiliaryColor.CGColor;
+    comButton.layer.borderWidth = 1;
+    [comButton setTitle:@"企业" forState:UIControlStateNormal];
+    [comButton setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+    [comButton setTitleColor:MainColor forState:UIControlStateHighlighted];
+    [comButton setImage:[UIImage imageNamed:@"identity_qiye"] forState:UIControlStateNormal];
+    [self.view addSubview:comButton];
+    
+    //直接进入
+    UIButton *intoButton = [[UIButton alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(comButton.frame) + 40, 90, 30)];
+    [intoButton addTarget:self action:@selector(intoButtonClick) forControlEvents:UIControlEventTouchUpInside];
+    intoButton.layer.cornerRadius = fillet;
+    intoButton.layer.masksToBounds = YES;
+    intoButton.backgroundColor = MainColor;
+    [intoButton setTitle:@"直接进入" forState:UIControlStateNormal];
+    intoButton.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+    [intoButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    intoButton.centerX = self.view.width * 0.5;
+    [self.view addSubview:intoButton];
+}
+
+- (void) buttonClick : (UIButton *) button
+{
+    button.layer.borderColor = AuxiliaryColor.CGColor;
+
+    if (button.tag == IdentityTeacher) {
+        ApplyTeacherController *teacherVc = [[ApplyTeacherController alloc] init];
+        [self.navigationController pushViewController:teacherVc animated:YES];
+    }else
+    {
+        CompanyController *teacherVc = [[CompanyController alloc] init];
+        [self.navigationController pushViewController:teacherVc animated:YES];
+    }
+}
+
+- (void) buttonClickDown : (UIButton *) button
+{
+    button.layer.borderColor = MainColor.CGColor;
+}
+
+- (void) buttonClickOutside : (UIButton *) button
+{
+    button.layer.borderColor = AuxiliaryColor.CGColor;
+
+}
+
+#pragma mark 直接进入
+- (void) intoButtonClick
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+@end

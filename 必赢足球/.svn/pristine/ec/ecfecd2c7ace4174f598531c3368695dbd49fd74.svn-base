@@ -1,0 +1,563 @@
+
+//
+//  MineOrderViewController.m
+//  我的定制
+//
+//  Created by yuhongtao on 16/7/9.
+//  Copyright © 2016年 com.ztt. All rights reserved.
+//
+
+#import "MineOrderViewController.h"
+#import "MineOrderViewCell.h"
+#import "MineOrderLableModel.h"
+#import "AFNetWW.h"
+#import "OrderMenuOneCell.h"
+#import "ColorTypeTools.h"
+#import "MJExtension.h"
+#import "MJRefresh.h"
+
+@interface MineOrderViewController ()<UITableViewDataSource,UITableViewDelegate,MineOrderViewCellDelegate,MineOrderScrollViewDelegate>
+
+@property (nonatomic,strong) UITableView *tableView;
+@property (nonatomic,strong) UITableView *tooltableview;
+@property (nonatomic,strong) UIView *backview;
+
+//数据源
+@property (nonatomic,strong) NSMutableArray *businessArr;
+@property (nonatomic,strong) NSMutableArray *hobbyArr;
+@property (nonatomic,strong) NSMutableArray *languageArr;
+@property (nonatomic,strong) NSMutableArray *DateSourceArr;
+@property (nonatomic,strong) NSMutableArray *arry;
+@property (nonatomic,strong) NSMutableArray *menuArr;
+@property (nonatomic,assign) BOOL cellIsHidden;
+
+@property (nonatomic,strong) UIView *Hidebtn;
+@property (nonatomic,strong) UIButton *cancleBtn;
+@property (nonatomic,strong) UIButton *addBtn;
+@property (nonatomic,strong) UIView *addView;
+@property (nonatomic,strong) OrderMenuOneCell *MenuOneCell;
+@end
+
+@implementation MineOrderViewController
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self setNav];
+    [self netWorkingSetting];
+}
+
+//请求个人标签
+-(void)netWorkingSetting{
+
+    NSString *token = [UserInfoTool getUserInfo].token;
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@&locale=%@",NetHeader,BianQian,token,[ManyLanguageMag getTypeWithWebDiscript]];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic) {
+        
+        [self setUpArrWith:responseDic];
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+-(void)setUpArrWith:(id)resb{
+    
+    NSArray *temp = resb[@"rows"];
+    NSArray *modelArr = [MineOrderLableModel objectArrayWithKeyValuesArray:temp];
+    for (int i = 0; i<modelArr.count; i++) {
+        //与接口保持一致
+        MineOrderLableModel *model = modelArr[i] ;
+        if (model.type ==0) {
+            if (![self.businessArr containsObject:model]) {
+                [self.businessArr addObject:model];
+            }
+        }
+        else if(model.type ==1) {
+            if (![self.hobbyArr containsObject:model]) {
+                [self.hobbyArr addObject:model];
+            }
+        }
+        else {
+            if (![self.languageArr containsObject:model]) {
+                [self.languageArr addObject:model];
+            }
+        }
+    }
+    [self.tableView reloadData];
+    
+}
+//编辑的点击事件
+-(void)editClick:(UIButton *)btn{
+    btn.selected = ! btn.selected;
+    self.cellIsHidden=!self.cellIsHidden;
+    [self.tableView reloadData];
+}
+-(void)setNav{
+    //创建的导航栏
+    self.title=[ManyLanguageMag getMineMenuStrWith:@"我的定制"];
+    self.navigationItem.rightBarButtonItem = [ColorTypeTools itemWithTitleName:[ManyLanguageMag getMineMenuStrWith:@"编辑"] highTitleName:[ManyLanguageMag getMineMenuStrWith:@"完成"] addTarget:self action:@selector(editClick:)];
+
+    self.cellIsHidden                      = YES;
+    self.businessArr=[NSMutableArray array];
+    self.hobbyArr=[NSMutableArray array];
+    self.languageArr=[NSMutableArray array];
+    self.menuArr=[NSMutableArray array];
+    self.DateSourceArr = [NSMutableArray arrayWithObjects:self.hobbyArr,self.businessArr,self.languageArr, nil];
+    [self.view addSubview:self.tableView];
+    
+}
+
+#pragma mark tableview
+-(CGFloat )tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    if (tableView==_tableView) {
+        
+        if (section==0&&![UserInfoTool isEnterprise]) {
+            return 0;
+        }else{
+            return 40;
+        }
+    }else {
+        return 0;
+    }
+    
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    
+    if (tableView==_tableView) {
+        
+        
+        UIView *bgView=[[UIView alloc]initWithFrame:CGRectMake(-3, 0, [UIScreen mainScreen].bounds.size.width, 40)];
+        
+        bgView.layer.borderWidth               = 1;
+        bgView.layer.borderColor               = [[UIColor colorWithRed:240/255.0f green:240/255.0f blue:240/255.0f alpha:1] CGColor];
+        
+        UILabel *space=[[UILabel alloc]initWithFrame:CGRectMake(0, 5,20, 30)];
+        [bgView addSubview:space];
+        
+        UILabel *languageL=[[UILabel alloc]initWithFrame:CGRectMake(20, 0, [UIScreen mainScreen].bounds.size.width, 30)];
+        languageL.font=[UIFont systemFontOfSize:14];
+        
+        if (section==0) {
+            languageL.text=[ManyLanguageMag getMineMenuStrWith:@"企业标签"];
+            
+        }else if (section==1){
+            languageL.text=[ManyLanguageMag getMineMenuStrWith:@"兴趣标签"];
+        }else{
+            languageL.text=[ManyLanguageMag getMineMenuStrWith:@"语言标签"];
+            
+        }
+        [bgView addSubview:languageL];
+        return bgView;
+    }else{
+        return nil;
+    }
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return 1;
+}
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    if (tableView==_tableView) {
+        return 3;
+    }else{
+        return 1;
+    }
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (tableView==_tableView) {
+        
+        static NSString *ID = @"MineOrderViewCell";
+        MineOrderViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        
+        if (cell==nil) {
+            cell=[[MineOrderViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        
+        if (indexPath.section==0) {
+            
+            if ([UserInfoTool isEnterprise]) {
+                cell.isEnterprise = 1;
+            }else{
+                cell.isEnterprise = 0;
+            }
+        }else{
+            cell.isEnterprise = 2;
+        }
+        
+        cell.arry = self.DateSourceArr[indexPath.section];
+            
+        cell.isHide = self.cellIsHidden;
+        //判段是否是企业标签
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.delegate = self;
+        cell.tag = indexPath.section;
+                
+        return cell;
+    }else{
+        self.MenuOneCell = [tableView dequeueReusableCellWithIdentifier:@"OrderMenuOneCell"];
+        self.MenuOneCell.selectionStyle = UITableViewCellSelectionStyleNone;
+        self.MenuOneCell.recommedArr = self.menuArr;
+        return self.MenuOneCell;
+        
+    }
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (tableView==_tableView) {
+        
+        CGFloat height;
+        if (indexPath.section==0) {
+            
+            if ([UserInfoTool isEnterprise]) {
+                height=[self WidthWithArry:self.hobbyArr withblank:NO withWidth:self.view.frame.size.width-20 WithY:10];
+            }else{
+                height = 0;
+            }
+            
+        }else if (indexPath.section==1){
+            
+            
+            height=[self WidthWithArry:self.businessArr withblank:YES withWidth:self.view.frame.size.width-20 WithY:10];
+        }else{
+            
+            height=[self WidthWithArry:self.languageArr withblank:YES withWidth:self.view.frame.size.width-20 WithY:10];
+            
+        }
+        return height;
+        
+    }else{
+        return [self WidthWithArry:self.menuArr withblank:NO withWidth:self.view.frame.size.width-70 WithY:10];
+        
+    }
+}
+
+-(CGFloat)WidthWithArry:(NSMutableArray *)arry  withblank:(BOOL)blank withWidth:(CGFloat)width WithY:(CGFloat)Y
+
+{
+    CGFloat orginY = Y;
+    CGFloat oneLineBtnWidtnLimit = width;//每行btn占的最长长度，超出则换行
+    CGFloat btnGap = 10;//btn的x间距
+    CGFloat btnGapY = 10;
+    NSInteger BtnlineNum = 0;
+    CGFloat BtnHeight = 30;
+    CGFloat minBtnLength = 50;//每个btn的最小长度
+    CGFloat maxBtnLength = oneLineBtnWidtnLimit - btnGap*2;//每个btn的最大长度
+    CGFloat Btnx = 0;//每个btn的起始位置
+    Btnx += btnGap;
+    
+    NSInteger count = blank==YES?arry.count+1:arry.count;
+    for (int i = 0; i < count; i++) {
+        CGFloat btnWidth ;
+        NSString *str;
+        
+        if(i==arry.count){
+             btnWidth = 20;
+         }else{
+            MineOrderLableModel *model = arry[i];
+            str = model.name;
+            btnWidth = [self WidthWithString:str fontSize:13 height:1000];
+        }
+        
+        btnWidth += 20;//让文字两端留出间距
+        if(btnWidth<minBtnLength)
+            btnWidth = minBtnLength;
+        if(btnWidth>maxBtnLength)
+            btnWidth = maxBtnLength;
+        if(Btnx + btnWidth > oneLineBtnWidtnLimit)
+        {
+            BtnlineNum ++;//长度超出换到下一行
+            Btnx = btnGap;
+        }
+        
+        UIButton *btn=[[UIButton alloc] init];
+        CGFloat height = (BtnlineNum*(BtnHeight+btnGapY))+orginY;
+        btn.frame = CGRectMake(Btnx, height,btnWidth,BtnHeight );
+        Btnx = btn.frame.origin.x + btn.frame.size.width + btnGap;
+    }
+    
+    CGFloat height = (BtnlineNum*(BtnHeight+btnGapY))+orginY;
+    
+    return height+BtnHeight+btnGapY;
+    
+}
+-(CGFloat)WidthWithString:(NSString*)string fontSize:(CGFloat)fontSize height:(CGFloat)height
+{
+    NSDictionary *attrs = @{NSFontAttributeName:[UIFont systemFontOfSize:fontSize]};
+    return  [string boundingRectWithSize:CGSizeMake(0, height) options:NSStringDrawingTruncatesLastVisibleLine | NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading attributes:attrs context:nil].size.width;
+}
+#pragma MineOrderViewCellDelegate
+-(void)passBtnClick:(UIButton *)btn tableviewcell:(UITableViewCell *)cell{
+    MineOrderLableModel *model = self.DateSourceArr [cell.tag][btn.tag-100];
+    NSDictionary *dic=@{
+                        @"token":[UserInfoTool getUserInfo].token,
+                        @"type" :[NSString stringWithFormat:@"%ld",(long)cell.tag],
+                        @"label_id":model.ID
+                        };
+    NSMutableArray *arry = self.DateSourceArr[cell.tag];
+    [arry removeObjectAtIndex:btn.tag-100];
+    [self.DateSourceArr replaceObjectAtIndex:cell.tag withObject:arry];
+    NSIndexSet *set=[NSIndexSet indexSetWithIndex:cell.tag];
+    [self.tableView reloadSections:set withRowAnimation:0];
+    [self deletesome:dic];
+}
+
+-(void)add:(NSInteger)tag{
+    [self childViewSetWithType:tag];
+}
+
+
+#pragma mark 加号点击
+-(void)childViewSetWithType:(NSInteger)type{
+    
+    //0 企业 1 兴趣  2语言
+    NSString *token = [UserInfoTool getUserInfo].token;
+    //与接口保持一致
+    NSInteger temp = type;
+    switch (temp) {
+        case 0:
+            type = 1;
+            break;
+        case 1:
+            type = 0;
+            break;
+        case 2:
+            type = 2;
+            break;
+        default:
+            [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"未知的标签类型"]];
+            break;
+    }
+    if (type == 1) {
+        return ;
+    }
+    [MBProgressHUD showMessage:@"请稍后"];
+
+    self.backview.frame=CGRectMake(25, 60, SCREEN_WIDTH-50, 191);
+    self.backview.backgroundColor = [UIColor redColor];
+    self.tooltableview.frame = CGRectMake(0, 0, SCREEN_WIDTH - 50, 150);
+    self.backview.centerY = self.view.centerY;
+    self.addView.frame=CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame), self.tooltableview.width, 1);
+    self.addBtn.frame = CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame)+1, self.tooltableview.width, 40);
+    self.cancleBtn.frame = CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame)+60,30, 30);
+    self.cancleBtn.centerX = self.view.centerX;
+    [[UIApplication sharedApplication].keyWindow addSubview:self.Hidebtn];
+    [[UIApplication sharedApplication].keyWindow addSubview:self.backview];
+    [self.backview addSubview:self.tooltableview];
+    [self.backview addSubview:self.addView];
+    [self.backview addSubview:self.addBtn];
+    [[UIApplication sharedApplication].keyWindow addSubview:self.cancleBtn];
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@&index=0&count=1000&type=%@&locale=%@",NetHeader,BianQianAdd,token,[NSString stringWithFormat:@"%ld",(long)type],[ManyLanguageMag getTypeWithWebDiscript]];
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic) {
+        
+        [MBProgressHUD hideHUD];
+        
+        NSArray *tempArr = responseDic[@"rows"];
+        NSMutableArray *models = (NSMutableArray *)[MineOrderLableModel objectArrayWithKeyValuesArray:tempArr];
+        self.menuArr = models;
+        self.tooltableview.frame = CGRectMake(0, 0, SCREEN_WIDTH - 50, SCREEN_HEIGHT - 170);
+        
+        if ([self WidthWithArry:models withblank:NO withWidth:self.view.frame.size.width-70 WithY:15]<SCREEN_HEIGHT - 170) {
+            self.tooltableview.height = [self WidthWithArry:models withblank:NO withWidth:self.view.frame.size.width-70 WithY:15];
+        }else
+        {
+            self.tooltableview.height = SCREEN_HEIGHT - 170;
+        }
+        
+        self.backview.height = self.tooltableview.height + 41;
+        self.backview.centerY = SCREEN_HEIGHT * 0.5;
+        
+        self.addBtn.frame = CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame)+1, self.tooltableview.width, 40);
+        
+        self.addView.frame = CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame), self.tooltableview.width, 1);
+        self.cancleBtn.frame = CGRectMake(0, CGRectGetMaxY(self.tooltableview.frame)+60,30, 30);
+        self.cancleBtn.y = CGRectGetMaxY(self.backview.frame)+30;
+        self.cancleBtn.centerX = self.view.centerX;
+        self.tooltableview.delegate = self;
+        self.backview.layer.cornerRadius = 10;
+        self.backview.layer.masksToBounds = YES;
+        [self.tooltableview reloadData];
+    } fail:^(NSError *error) {
+        [MBProgressHUD hideHUD];
+
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+
+#pragma mark 选中提交
+-(void)addArr:(NSMutableArray *)dicArr{
+    
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?locale=%@&token=%@",NetHeader,BianQianSeleted,[ManyLanguageMag getTypeWithWebDiscript],[UserInfoTool getUserInfo].token];
+    NSDictionary *dic=@{
+                        @"type" :[NSString stringWithFormat:@"%@",dicArr[0][@"type"]],
+                        @"selectedlabels":dicArr,
+                        @"locale":[ManyLanguageMag getTypeWithWebDiscript],
+                        };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        [self.businessArr removeAllObjects];
+        [self.hobbyArr removeAllObjects];
+        [self.languageArr removeAllObjects];
+        [self netWorkingSetting];
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+
+#pragma mark 删除提交
+-(void)deletesome:(NSDictionary *)dic{
+    
+    NSString *url  = [NSString stringWithFormat:@"%@%@?locale=%@",NetHeader,Deletelable,[ManyLanguageMag getTypeWithWebDiscript]];
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        [MBProgressHUD showSuccess:@"删除成功"];
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+
+#pragma mark lianjiazai
+-(void)backC{
+    [self.navigationController popViewControllerAnimated:1];
+}
+-(UITableView *)tableView{
+    
+    if (!_tableView) {
+        
+        _tableView=[[UITableView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height - 64)];
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        _tableView.dataSource = self;
+        _tableView.delegate = self;
+    }
+    
+    return _tableView;
+    
+}
+-(UITableView *)tooltableview{
+    if (!_tooltableview) {
+        _tooltableview=[[UITableView alloc]initWithFrame:CGRectMake(0, SCREEN_HEIGHT - 216, SCREEN_WIDTH, 216)];
+        _tooltableview.backgroundColor=[UIColor whiteColor];
+        _tooltableview.delegate = self;
+        _tooltableview.dataSource = self;
+        _tooltableview.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_tooltableview registerClass:[OrderMenuOneCell class] forCellReuseIdentifier:@"OrderMenuOneCell"];
+    }
+    return _tooltableview;
+}
+
+-(UIView *)Hidebtn{
+    if (!_Hidebtn) {
+        _Hidebtn=[[UIView alloc]initWithFrame:CGRectMake(0, 0,SCREEN_WIDTH, SCREEN_HEIGHT+64-47)];
+        _Hidebtn.backgroundColor=[UIColor blackColor];
+        _Hidebtn.alpha                         = 0.5;
+        
+    }
+    return _Hidebtn;
+    
+}
+-(UIButton *)cancleBtn{
+    if (!_cancleBtn) {
+        _cancleBtn=[[UIButton alloc]init];
+        
+        [_cancleBtn setImage:[UIImage imageNamed:@"my_design_mask_close"] forState:UIControlStateNormal];
+        [_cancleBtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [_cancleBtn addTarget:self action:@selector(cancleClick) forControlEvents:UIControlEventTouchUpInside];
+        
+        
+    }
+    return _cancleBtn;
+    
+}
+
+-(UIButton *)addBtn{
+    if (!_addBtn) {
+        _addBtn=[[UIButton alloc]initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH-50, 40)];
+        _addBtn.backgroundColor=[UIColor whiteColor];
+        [_addBtn setTitle:[ManyLanguageMag getMineMenuStrWith:@"添加"] forState:UIControlStateNormal];
+        [_addBtn setTitleColor:GreenColor forState:UIControlStateNormal];
+        [_addBtn addTarget:self action:@selector(addclick) forControlEvents:UIControlEventTouchUpInside];
+        
+        
+    }
+    return _addBtn;
+    
+}
+-(UIView *)addView{
+    if (!_addView) {
+        _addView=[[UIView alloc]initWithFrame:CGRectMake(25, 0, SCREEN_WIDTH-50, 1)];
+        _addView.backgroundColor = RGBCOLOR(240, 240, 240);
+        
+        
+    }
+    return _addView;
+    
+}
+
+-(UIView *)backview{
+    if (!_backview) {
+        _backview=[[UIView alloc]initWithFrame:CGRectMake(25, 0, SCREEN_WIDTH-50, 100)];
+        
+    }
+    return _backview;
+    
+}
+-(void)addclick{
+    
+    for (int i = 0; i<self.MenuOneCell.tempArr.count; i++) {
+        UIButton *btn = self.MenuOneCell.tempArr[i];
+        if (!btn.hidden) {
+            MineOrderLableModel *model = self.MenuOneCell.recommedArr[btn.tag];
+            NSDictionary *dic=@{
+                                @"id":model.ID,
+                                @"name":model.name,
+                                @"type":[NSString stringWithFormat:@"%ld",(long)model.type]
+                                };
+            [self.MenuOneCell.contentArr addObject:dic];
+            
+        }
+        
+    }
+    if (self.MenuOneCell.contentArr.count>0) {
+        [self addArr:self.MenuOneCell.contentArr];
+        
+    }
+    [self cancleClick];
+    
+}
+-(void)cancleClick{
+    self.menuArr =[NSMutableArray array];
+    [self.tooltableview reloadData];
+    [self.backview removeFromSuperview];
+    [self.cancleBtn removeFromSuperview];
+    [self.addBtn removeFromSuperview];
+    [self.tooltableview removeFromSuperview];
+    [self.Hidebtn removeFromSuperview];
+}
+
+#pragma mark tabbarHidden
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    if (self.Hidebtn) {
+        [self cancleClick];
+    }
+}
+
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    CGFloat sectionHeaderHeight = 40;
+    if (scrollView.contentOffset.y<=sectionHeaderHeight&&scrollView.contentOffset.y>=0) {
+        scrollView.contentInset = UIEdgeInsetsMake(-scrollView.contentOffset.y, 0, 0, 0);
+    } else if (scrollView.contentOffset.y>=sectionHeaderHeight) {
+        scrollView.contentInset = UIEdgeInsetsMake(-sectionHeaderHeight, 0, 0, 0);
+    }
+}
+
+
+@end

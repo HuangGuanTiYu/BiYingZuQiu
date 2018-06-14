@@ -1,0 +1,754 @@
+//
+//  MineController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/4/20.
+//
+//  我的
+
+#import "MineController.h"
+#import "AFNetWW.h"
+#import "FriendModel.h"
+#import "MJExtension.h"
+#import "MainPersonCell.h"
+#import "MainSecCell.h"
+#import "MainThirdCell.h"
+#import "AppDelegate.h"
+#import "KxMenu.h"
+#import "MainWebController.h"
+#import "FriendInfoShowHotViewController.h"
+#import "MineStudyViewController.h"
+#import "MyDownLoadsViewController.h"
+#import "MyCareerViewController.h"
+#import "MineOrderViewController.h"
+#import "MineMapViewController.h"
+#import "MyTeacherController.h"
+#import "SetingViewController.h"
+#import "MainNavigationController.h"
+#import "LoginController.h"
+#import <AVFoundation/AVFoundation.h>
+#import "QRCodeController.h"
+#import "AppDelegate.h"
+#import "H5CourseController.h"
+#import "MyMessageController.h"
+
+@interface MineController ()<UITableViewDelegate, UITableViewDataSource,MainPersonCellDelegate,MainSecCellDelegate, MainThirdCellDelegate>
+
+@property(nonatomic,strong)UITableView *tabView;
+
+@property(nonatomic,assign)BOOL btnEnabled;
+
+@property(nonatomic,strong)FriendModel *model;
+
+//证书
+@property(nonatomic,assign)NSInteger cert;
+
+//积分
+@property(nonatomic,assign)NSInteger coin;
+
+//是否是跳转到 我的信息界面
+@property(nonatomic, assign) BOOL pushToFriendInfoController;
+
+@end
+
+@implementation MineController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    if ([self respondsToSelector:@selector(setAutomaticallyAdjustsScrollViewInsets:)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+    }
+    
+    self.tabView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, self.view.height + 150)];
+    self.tabView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tabView.dataSource = self;
+    self.tabView.delegate = self;
+    self.tabView.scrollEnabled = YES;
+    self.tabView.showsHorizontalScrollIndicator = NO;
+    self.tabView.showsVerticalScrollIndicator = NO;
+    
+    [_tabView registerClass:[MainPersonCell class] forCellReuseIdentifier:@"MainPersonCell"];
+    [_tabView registerClass:[MainSecCell class] forCellReuseIdentifier:@"MainSecCell"];
+    [_tabView registerClass:[MainThirdCell class] forCellReuseIdentifier:@"MainThirdCell"];
+    
+    [self.view addSubview:self.tabView];
+    
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
+    
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    
+    if (self.pushToFriendInfoController) {
+        self.pushToFriendInfoController = NO;
+        return;
+    }
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleLightContent];
+    
+    [self.navigationController setNavigationBarHidden:YES animated:NO];
+
+    if ([UserInfoTool isLogin]) {
+        //判断打卡状态
+        [self checkState];
+        //得到个人详情
+        [self netWorkingSetting];
+    }else{
+        [self.tabView reloadData];
+        [MBProgressHUD showError:@"您还未登录或登录超时，请登录!"];
+    }
+}
+
+
+/**
+ *  每次进界面刷新积分
+ */
+#pragma mark  检查打卡状态
+-(void)checkState{
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@",NetHeader,CheckinStatus];
+    
+    NSDictionary *dic = @{@"token":[UserInfoTool getUserInfo].token};
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+
+        NSNumber *code = responseDic[@"rescode"];
+        
+        if (code.integerValue == 20002) {
+            [UserInfoTool delegateUserInfo];
+            [self.tabView reloadData];
+        }else{
+            NSInteger chenstutas=[responseDic[@"data"][@"checkin"] integerValue];
+            if ([UserInfoTool isLogin]) {
+                if (chenstutas == 1) {
+                    self.btnEnabled = YES;
+                }else{
+                    self.btnEnabled = NO;
+                }
+            }else{
+                self.btnEnabled = YES;
+            }
+            
+            [self.tabView reloadData];
+        }
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+
+/**
+ *  得到登录人的信息
+ */
+#pragma mark  得到登录人的信息
+-(void)netWorkingSetting{
+    
+    if ([UserInfoTool isLogin]) {
+        NSString *url = [NSString stringWithFormat:@"%@%@",NetHeader,HotIcoClick];
+        NSDictionary *Parameters=@{
+                                   @"token":[UserInfoTool getUserInfo].token,
+                                   @"zttid": [UserInfoTool getUserInfo].zttid
+                                   };
+        
+        [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:Parameters success:^(id responseDic) {
+            NSDictionary *tempDic=responseDic[@"data"];
+            
+            self.model = [FriendModel objectWithKeyValues:tempDic];
+            
+            UserInfo *info = [UserInfoTool getUserInfo];
+            info.headimgurl = self.model.headimgurl;
+            info.nickname = self.model.nickname;
+            info.mobile = self.model.mobile;
+            info.qq = self.model.qq;
+            info.mobile = self.model.mobile;
+            [UserInfoTool saveUserInfo:info];
+            
+            [self.tabView reloadData];
+        } fail:^(NSError *error) {
+            [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+        }];
+        
+    }else{
+        [MBProgressHUD showError:@"您还未登录或登录超时，请登录!"];
+    }
+}
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)sectio
+{
+    return 4;
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.row==0) {
+        return 130;
+    }else if(indexPath.row==1){
+        
+        return 54;
+    }else if(indexPath.row==2){
+        
+        return 11;
+    }
+    else{
+        CGFloat aa= self.view.width-150-64-10;
+        return (aa*3);
+    }
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.row==0) {
+        
+        MainPersonCell *cell = [[MainPersonCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"MainPersonCell"];
+        if ([UserInfoTool isLogin]) {
+            cell.model = self.model;
+            if (self.btnEnabled == 0) {
+                cell.cardBtnenabled = 0;
+            }else{
+                cell.cardBtnenabled = 1;
+            }
+        }else{
+            cell.cardBtnenabled=1;
+        }
+        
+        cell.frame = CGRectMake(0, 0, self.view.frame.size.width, 170);
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.delegate = self;
+        return cell;
+        
+    }else if (indexPath.row == 1){
+        MainSecCell *cell=[[MainSecCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"MainSecCell"];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.delegate = self;
+        if ([UserInfoTool isLogin]) {
+            MainSecCellModel *model=[[MainSecCellModel alloc] init];
+            if (self.btnEnabled==0) {  //已签到
+                model.coin = self.coin ? self.coin : [UserInfoTool getUserInfo].coin;
+            }else{//未签到
+                model.coin = [UserInfoTool getUserInfo].coin;
+            }
+            model.cert = self.cert ? self.cert : [UserInfoTool getUserInfo].cert;
+            cell.model=model;
+        }
+        
+        return cell;
+        
+    }else if(indexPath.row==2){
+        UITableViewCell *cell=[[UITableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
+        cell.backgroundColor=[UIColor colorWithRed:240/255.0f green:240/255.0f blue:240/255.0f alpha:1];
+        cell.userInteractionEnabled=NO;
+        return cell;
+    }
+    else {  //sectionthere
+        
+        MainThirdCell *cell=[[MainThirdCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"MainThirdCell"];
+        cell.delegate = self;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        if ([UserInfoTool isEnterprise]) {
+            cell.isEnterPirse = YES;
+        }else{
+            cell.isEnterPirse = NO;
+        }
+        cell.delegate = self;
+        return cell;
+        
+    }
+}
+
+#pragma mark +号点击
+-(void)addViewWithAddWith:(UIButton *)btn{
+    if (btn.tag == 2) {
+        [self addBtn];
+    }else if (btn.tag == 1){
+        [self isLogin];
+    }
+    else{//签到
+        [self postDoCard];
+    }
+}
+
+#pragma 积分证书点击事件
+-(void)scoreBtnClick:(UIButton *)btn{
+    
+    if ([UserInfoTool isLogin]) {
+
+        switch (btn.tag) {
+            case 1:{
+                MainWebController *vc = [[MainWebController alloc] init];
+                vc.webTitle = @"我的积分";
+                vc.url = [NSString stringWithFormat:@"%@%@?appkey=%@&locale=%@",NetHeader,VoteDetail,appkey,[ManyLanguageMag getTypeWithWebDiscript]];
+                [self.navigationController pushViewController:vc animated:YES];
+            }
+                break;
+            case 2:{
+                
+                MainWebController *vc = [[MainWebController alloc] init];
+                vc.webTitle = @"我的证书";
+                vc.url = [NSString stringWithFormat:@"%@%@?locale=%@",NetHeader,CardDetail,[ManyLanguageMag getTypeWithWebDiscript]];
+                [self.navigationController pushViewController:vc animated:YES];
+                
+            }
+                break;
+            default:
+                break;
+        }
+    }else{
+        
+        [self gotoLoginPage];
+    }
+}
+
+#pragma 菜单点击事件
+-(void)passBtnTag:(UIButton *)btn{
+    
+    if ([UserInfoTool isLogin]) {//用户登录
+        if([UserInfoTool isEnterprise]){//是企业用户
+            switch (btn.tag) {
+                case 0://我的学习
+                {
+                    MineStudyViewController *studyVc = [[MineStudyViewController alloc] init];
+                    studyVc.SourceType = SourceStudy;
+                    [self.navigationController pushViewController:studyVc animated:YES];
+                    break;
+                }
+                case 1: //我的考试
+                {
+                    MainWebController *test = [[MainWebController alloc] init];
+                    NSString *str=[NSString stringWithFormat:@"%@%@?locale=%@",NetHeader,Mytest,[ManyLanguageMag getTypeWithWebDiscript]];
+                    test.webTitle = @"我的考试";
+                    test.url = str;
+                    [self.navigationController pushViewController:test animated:YES];
+                    break;
+                }
+                case 2: //我的收藏
+                {
+                    MineStudyViewController *studyVc = [[MineStudyViewController alloc] init];
+                    studyVc.SourceType = SourceCollection;
+                    [self.navigationController pushViewController:studyVc animated:YES];
+                    break;
+                }
+                case 3: //我的下载
+                {
+                    MyDownLoadsViewController *vc = [[MyDownLoadsViewController alloc] init];
+                    [self.navigationController pushViewController:vc animated:YES];
+                    break;
+                }
+                case 4: //我的事业部
+                {
+                    MyCareerViewController *caree = [[MyCareerViewController alloc] init];
+                    [self.navigationController pushViewController:caree animated:YES];
+                    break;
+                }
+                case 5: //我的定制
+                {
+                    MineOrderViewController *order = [[MineOrderViewController alloc] init];
+                    [self.navigationController pushViewController:order animated:YES];
+                    break;
+                }
+                case 6: { //学习地图
+                    MineMapViewController *map=[[MineMapViewController alloc] init];
+                    [self.navigationController pushViewController:map animated:YES];
+                    break;
+                }
+                case 7: //我是讲师
+                {
+                    //判断是否是讲师
+                    [self isTeacher];
+                    break;
+                }
+                case 8: //我的问卷
+                {
+                    MainWebController *quertion = [[MainWebController alloc] init];
+                    quertion.webTitle = [ManyLanguageMag getMineMenuStrWith:@"我的问卷"];
+                    
+                    NSString *url = [NSString stringWithFormat:@"%@%@?locale=%@",NetHeader,Quetion,[ManyLanguageMag getTypeWithWebDiscript]];
+                    quertion.url = url;
+                    [self.navigationController pushViewController:quertion animated:YES];
+                    break;
+                }
+                case 9: //我的课件
+                {
+                    if (![UserInfoTool isTeahcher]) {
+                        MyMessageController *set = [[MyMessageController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }else
+                    {
+                        H5CourseController *h5CourseVc = [[H5CourseController alloc] init];
+                        [self.navigationController pushViewController:h5CourseVc animated:YES];
+                        break;
+                    }
+                }
+                case 10: //我的消息
+                {
+                    if (![UserInfoTool isTeahcher]) {
+                        SetingViewController *set = [[SetingViewController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }else
+                    {
+                        MyMessageController *set = [[MyMessageController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }
+                }
+                case 11: //设置
+                {
+                    SetingViewController *set = [[SetingViewController alloc] init];
+                    [self.navigationController pushViewController:set animated:YES];
+                    break;
+                }
+                default:
+                    break;
+                    
+            }
+            
+        } else{//是个人用户
+            
+            switch (btn.tag) {
+                case 0: //我的学习
+                {
+                    MineStudyViewController *studyVc = [[MineStudyViewController alloc] init];
+                    studyVc.SourceType = SourceStudy;
+                    [self.navigationController pushViewController:studyVc animated:YES];
+                    break;
+                }
+                case 1: //我的收藏
+                {
+                    MineStudyViewController *studyVc = [[MineStudyViewController alloc] init];
+                    studyVc.SourceType = SourceCollection;
+                    [self.navigationController pushViewController:studyVc animated:YES];
+                    break;
+                }
+                case 2: //我的下载
+                {
+                    MyDownLoadsViewController *vc = [[MyDownLoadsViewController alloc] init];
+                    [self.navigationController pushViewController:vc animated:YES];
+                    break;
+                }
+                case 3: //我的定制
+                {
+                    MineOrderViewController *order = [[MineOrderViewController alloc] init];
+                    [self.navigationController pushViewController:order animated:YES];
+                    break;
+                }
+                case 4: //我是讲师
+                {
+                    //判断是否是讲师
+                    [self isTeacher];
+                    break;
+                }
+                case 5: //我的问卷
+                {
+                    MainWebController *quertion = [[MainWebController alloc] init];
+                    quertion.webTitle = [ManyLanguageMag getMineMenuStrWith:@"我的问卷"];
+
+                    NSString *url = [NSString stringWithFormat:@"%@%@?locale=%@",NetHeader,Quetion,[ManyLanguageMag getTypeWithWebDiscript]];
+                    quertion.url = url;
+                    [self.navigationController pushViewController:quertion animated:YES];
+                    break;
+                }
+                case 6: //我的课件
+                {
+                    if (![UserInfoTool isTeahcher]) { //
+                        MyMessageController *set = [[MyMessageController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }else
+                    {
+                        H5CourseController *h5CourseVc = [[H5CourseController alloc] init];
+                        [self.navigationController pushViewController:h5CourseVc animated:YES];
+                        break;
+                    }
+                }
+                case 7: //我的消息
+                {
+                    if (![UserInfoTool isTeahcher]) {
+                        SetingViewController *set = [[SetingViewController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }else
+                    {
+                        MyMessageController *set = [[MyMessageController alloc] init];
+                        [self.navigationController pushViewController:set animated:YES];
+                        break;
+                    }
+
+                }
+                case 8: //设置
+                {
+                    SetingViewController *set = [[SetingViewController alloc] init];
+                    [self.navigationController pushViewController:set animated:YES];
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }else{//用户未登录
+        if (btn.tag == 7 || btn.tag == 10) {
+            SetingViewController *set = [[SetingViewController alloc] init];
+            [self.navigationController pushViewController:set animated:YES];
+        }else{
+            
+            [self gotoLoginPage];
+        }
+    }
+}
+
+-(void)addBtn{
+    NSMutableArray *menuItems=[[NSMutableArray alloc]init];
+    
+    NSString *bb=[ManyLanguageMag getMineStrWith:@"扫一扫"];
+    NSArray *titles=@[bb];
+    
+    
+    for (int i=0; i<titles.count; i++) {
+        id kxm=[KxMenuItem menuItem:titles[i] image:[UIImage imageNamed:@"common_code_scan"] target:self action:@selector(doMenuItem:)];
+        [menuItems addObject:kxm];
+    }
+    
+    CGRect targetFrame = self.navigationController.navigationItem.rightBarButtonItem.customView.frame;
+    targetFrame.origin.y = targetFrame.origin.y + 38;
+    targetFrame.origin.x=self.view.bounds.size.width-targetFrame.size.width-25;
+    [KxMenu showMenuInView:self.view
+                  fromRect:targetFrame
+                 menuItems:menuItems];
+    [KxMenu setTitleFont:[UIFont systemFontOfSize:12]];
+    [KxMenu setTintColor:[UIColor  blackColor]];
+}
+
+#pragma mark 头像点击
+- (void)isLogin{
+    
+    if ([UserInfoTool isLogin]) {
+        
+        NSDictionary *dic=@{
+                            @"token": [UserInfoTool getUserInfo].token,
+                            @"zttid" : [UserInfoTool getUserInfo].zttid
+                            };
+        
+        NSString *url=[NSString stringWithFormat:@"%@%@",NetHeader,HotIcoClick];
+        [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+            NSNumber * code = responseDic[@"rescode"];
+            
+            if (code.integerValue == 10000) {
+                NSDictionary *tempDic = responseDic[@"data"];
+                FriendModel *model=[FriendModel objectWithKeyValues:tempDic];
+                FriendInfoShowHotViewController *infoVc = [[FriendInfoShowHotViewController alloc] init];
+                self.pushToFriendInfoController = YES;
+                infoVc.friendM = model;
+                
+                UserInfo *userInfo = [UserInfoTool getUserInfo];
+                userInfo.sex = model.sex;
+                [UserInfoTool saveUserInfo:userInfo];
+                
+                [self.navigationController pushViewController:infoVc animated:YES];
+                
+            }
+        } fail:^(NSError *error) {
+            [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+        }];
+    }else {
+        [self login];
+    }
+}
+
+#pragma mark 签到
+-(void)postDoCard{
+    
+    if ([UserInfoTool isLogin]) {
+        
+        NSString *url = [NSString stringWithFormat:@"%@%@",NetHeader,Checkin];
+        NSDictionary *Parameters=@{
+                                   @"token":[UserInfoTool getUserInfo].token,
+                                   };
+        
+        [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:Parameters success:^(id responseDic) {
+            
+            if ([responseDic[@"rescode"] integerValue] == 10000) {
+                NSDictionary *data = responseDic[@"data"];
+                NSNumber *coin = data[@"coin"];//更改用户信息
+                NSNumber *cert = data[@"cert"];//更改用户信息
+                int exp = [data[@"exp"] intValue];
+                int level = [data[@"level"] intValue];
+                int star = [data[@"star"] intValue];
+                
+                UserInfo *userInfo = [UserInfoTool getUserInfo];
+                userInfo.coin = [coin intValue];
+                userInfo.cert = [cert intValue];
+                userInfo.exp = exp;
+                userInfo.lv = level;
+                userInfo.star = star;
+                [UserInfoTool saveUserInfo:userInfo];
+                
+                _coin = coin.integerValue;
+                _cert = cert.integerValue;
+                [MBProgressHUD showText:@"签到成功" inview:self.view];
+                [self.tabView reloadData];
+            }
+        } fail:^(NSError *error) {
+            [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+        }];
+        
+        self.btnEnabled=NO;
+        [self.tabView reloadData];
+    }else{
+        [self gotoLoginPage];
+    }
+}
+
+-(void)gotoLoginPage
+{
+    AppDelegate *delegate = (AppDelegate *)[UIApplication sharedApplication].delegate;
+    [delegate alertViewLogin];
+}
+
+-(void)doMenuItem:(id)tag{
+    if([UserInfoTool isLogin]){
+        
+        KxMenuItem *item = tag;
+        if ([item.title isEqualToString:[ManyLanguageMag  getMineStrWith:@"扫一扫"]]){
+            NSString *mediaType = AVMediaTypeVideo;
+            AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:mediaType];
+            if(authStatus == AVAuthorizationStatusDenied){
+                if (IS_VAILABLE_IOS8) {
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"相机权限受限" message:@"请在iPhone的\"设置->隐私->相机\"选项中,允许\"自游邦\"访问您的相机." preferredStyle:UIAlertControllerStyleAlert];
+                    [alert addAction:[UIAlertAction actionWithTitle:@"好" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+                    }]];
+                    [alert addAction:[UIAlertAction actionWithTitle:@"去设置" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        if ([self canOpenSystemSettingView]) {
+                            [self systemSettingView];
+                        }
+                    }]];
+                    [self presentViewController:alert animated:YES completion:nil];
+                } else {
+                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"相机权限受限" message:@"请在iPhone的\"设置->隐私->相机\"选项中,允许\"自游邦\"访问您的相机." delegate:nil cancelButtonTitle:@"好的" otherButtonTitles:nil];
+                    [alert show];
+                }
+                
+                return;
+            }
+            
+            QRCodeController *qrcodeVC = [[QRCodeController alloc] init];
+            qrcodeVC.view.alpha = 0;
+            [qrcodeVC setDidReceiveBlock:^(NSString *result) {
+                MainWebController *webVc = [[MainWebController alloc] init];
+                NSString *url = @"";
+                if ([UserInfoTool isLogin]) {
+                    url = [NSString stringWithFormat:@"%@",result];
+                }else
+                {
+                    url = [NSString stringWithFormat:@"%@?token=%@",result,@"ydxt"];
+                }
+                if ([url containsString:@"https://"]) {
+                    url = [url stringByReplacingOccurrencesOfString:@"https://" withString:@"http://"];
+                }
+                webVc.url = url;
+                webVc.webTitle = @"查看";
+                [self.navigationController pushViewController:webVc animated:YES];
+            }];
+            AppDelegate *del = (AppDelegate *)[UIApplication sharedApplication].delegate;
+            [del.window.rootViewController addChildViewController:qrcodeVC];
+            [del.window.rootViewController.view addSubview:qrcodeVC.view];
+            [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+                qrcodeVC.view.alpha = 1;
+            } completion:^(BOOL finished) {
+            }];
+        }
+    }else{
+        AppDelegate *delegate = (AppDelegate *)[UIApplication sharedApplication].delegate;
+        [delegate alertViewLogin];
+        
+    }
+}
+
+#pragma mark 判断是否是讲师
+- (void) isTeacher
+{
+    NSString *url=[NSString stringWithFormat:@"%@m/teacher/status?token=%@",NetHeader,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic) {
+        NSInteger code = [responseDic[@"rescode"] integerValue];
+
+        if (code == 10000) {
+            int state=[responseDic[@"data"] intValue];
+            if (state == 1) { //是讲师
+                MainWebController *teacherVc = [[MainWebController alloc] init];
+                teacherVc.webTitle = [ManyLanguageMag getMineMenuStrWith:@"我是讲师"];
+                NSString *url=[NSString stringWithFormat:@"%@mh5/teacher?appkey=%@&id=0",NetHeader,appkey];
+                teacherVc.url = url;
+                [self.navigationController pushViewController:teacherVc animated:YES];
+            }else
+            {
+                MyTeacherController *teacherVc = [[MyTeacherController alloc] initWithState:state];
+                teacherVc.model = self.model;
+                [self.navigationController pushViewController:teacherVc animated:YES];
+            }
+        }
+    } fail:^(NSError *error) {
+
+    }];
+}
+
+#pragma mark 昵称点击
+- (void)nameClick
+{
+    if (![UserInfoTool isLogin])
+    {
+        [self login];
+    }
+}
+
+#pragma mark 直接登录
+- (void) login
+{
+    [UserInfoTool delegateUserInfo];
+    
+    MainNavigationController *mainVc = [[MainNavigationController alloc] initWithRootViewController:[LoginController loginController]];
+    
+    [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:mainVc animated:YES completion:nil];
+}
+
+/**
+ *  是否可以打开设置页面
+ *
+ */
+- (BOOL)canOpenSystemSettingView {
+    if (IS_VAILABLE_IOS8) {
+        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            return YES;
+        } else {
+            return NO;
+        }
+    } else {
+        return NO;
+    }
+}
+
+/**
+ *  跳到系统设置页面
+ */
+- (void)systemSettingView {
+    if (IS_VAILABLE_IOS8) {
+        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url];
+        }
+    }
+}
+
+@end

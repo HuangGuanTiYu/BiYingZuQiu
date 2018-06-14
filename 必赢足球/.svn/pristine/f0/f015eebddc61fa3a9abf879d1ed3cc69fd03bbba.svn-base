@@ -1,0 +1,159 @@
+//
+//  MessageTaskNoticeCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/4.
+//
+//
+
+#import "MessageTaskNoticeCell.h"
+#import "MessageModel.h"
+#import "UIImageView+WebCache.h"
+#import "NSString+Extension.h"
+
+@interface MessageTaskNoticeCell()
+
+@property (nonatomic, strong) UIImageView *headerView;
+
+@property (nonatomic, strong) UILabel *titleLabel;
+
+@property (nonatomic, strong) UILabel *contentLabel;
+
+@property (nonatomic, strong) UILabel *timeLabel;
+
+// 身份
+@property (nonatomic, strong) UIButton *identityLabel;
+
+@end
+
+@implementation MessageTaskNoticeCell
+
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        
+        self.headerView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:12];
+        self.titleLabel.textColor = RGBColor(143,143,143);
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.contentLabel = [[UILabel alloc] init];
+        self.contentLabel.font = [UIFont systemFontOfSize:14];
+        self.contentLabel.textColor = RGBColor(48,48,48);
+        self.contentLabel.numberOfLines = 0;
+        [self.contentView addSubview:self.contentLabel];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.font = [UIFont systemFontOfSize:12];
+        self.timeLabel.textColor = RGBColor(143,143,143);
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.identityLabel = [[UIButton alloc] init];
+        self.identityLabel.hidden = YES;
+        self.identityLabel.titleLabel.font = [UIFont systemFontOfSize:11];
+        [self.identityLabel setTitleColor:GreenColor forState:UIControlStateNormal];
+        self.identityLabel.layer.cornerRadius = 1.5;
+        self.identityLabel.layer.masksToBounds = YES;
+        self.identityLabel.layer.borderColor = GreenColor.CGColor;
+        self.identityLabel.layer.borderWidth = 0.5;
+        [self.contentView addSubview:self.identityLabel];
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.headerView.frame = CGRectMake(15, 15, 36, 36);
+    self.headerView.layer.cornerRadius = 18;
+    self.headerView.layer.masksToBounds = YES;
+    
+    CGFloat timeW = 100;
+    self.timeLabel.frame = CGRectMake(self.contentView.width - timeW - mainSpacing, self.headerView.y, timeW, 30);
+    
+    CGFloat titleX = CGRectGetMaxX(self.headerView.frame) + mainSpacing;
+    self.titleLabel.frame = CGRectMake(titleX, self.timeLabel.y, 0, self.timeLabel.height);
+    
+    CGFloat identityW = [self.model.roleName returnStringRect:self.model.roleName size:CGSizeMake(CGFLOAT_MAX, 15) font:[UIFont systemFontOfSize:11]].width + mainSpacing;
+    self.identityLabel.frame = CGRectMake(self.titleLabel.x, 0, identityW, 15);
+
+    self.contentLabel.frame = CGRectMake(0, 0, self.contentView.width - CGRectGetMaxX(self.identityLabel.frame) - mainSpacing * 2, 0);
+
+    if (self.type == Task) {
+        self.contentLabel.x = self.titleLabel.x;
+    }else
+    {
+        self.contentLabel.x = CGRectGetMaxX(self.identityLabel.frame) + mainSpacing;
+    }
+    
+    [self.titleLabel sizeToFit];
+    [self.contentLabel sizeToFit];
+    [self.timeLabel sizeToFit];
+
+    self.titleLabel.width = self.timeLabel.x - CGRectGetMaxX(self.headerView.frame) - 2 * mainSpacing;
+    self.contentLabel.y = CGRectGetMaxY(self.titleLabel.frame) + mainSpacing - 2;
+    self.identityLabel.y = self.contentLabel.y + 1;
+}
+
+- (void)setType:(int)type
+{
+    _type = type;
+}
+
+- (void)setModel:(MessageModel *)model
+{
+    _model = model;
+    
+    [self.headerView sd_setImageWithURL:[NSURL URLWithString:model.headpic] placeholderImage:[UIImage imageNamed:@"headerNormal"]];
+    
+    self.timeLabel.text = model.indate;
+    
+    if (self.type == Task) {
+        self.contentLabel.text = model.title;
+
+        NSMutableString *contentString = [NSMutableString string];
+        if (model.nickname.length > 0) {
+            [contentString appendString:[NSString stringWithFormat:@"[%@]",model.nickname]];
+        }
+        
+        if (model.desc.length > 0) {
+            [contentString appendString:model.desc];
+        }
+        
+        if (model.nickname.length > 0) {
+            NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:contentString];
+            [string addAttribute:NSForegroundColorAttributeName value:GreenColor range:[contentString rangeOfString:[NSString stringWithFormat:@"[%@]",model.nickname]]];
+            self.titleLabel.attributedText = string;
+        }else
+        {
+            self.titleLabel.text = contentString;
+        }
+        
+        self.contentLabel.height = model.taskTitleHeight;
+
+        self.identityLabel.hidden = YES;
+
+    }else if (self.type == Notice)
+    {
+        self.contentLabel.text = model.info;
+
+        self.titleLabel.text = model.title;
+        
+        self.contentLabel.height = model.noticeInfoHeight;
+        
+        if (self.model.roleName.length > 0) {
+            self.identityLabel.hidden = NO;
+            [self.identityLabel setTitle:self.model.roleName forState:UIControlStateNormal];
+        }else
+        {
+            self.identityLabel.hidden = YES;
+        }
+    }
+    
+}
+
+@end

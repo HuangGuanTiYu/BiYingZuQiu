@@ -1,0 +1,35 @@
+//
+//  HomePageModel.h
+//  NewSchoolBus
+//
+//  Created by edz on 2017/8/17.
+//  Copyright © 2017年 edz. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface HomePageModel : NSObject
+
+@property (nonatomic, strong) NSString *businesscode; //业务码
+
+@property (nonatomic, strong) NSString *businessid;
+
+@property (nonatomic, strong) NSString *imgurl;
+
+@property (nonatomic, strong) NSString *title;
+
+@property (nonatomic, strong) NSString *indate;
+
+@property (nonatomic, strong) NSString *desc;
+
+@property (nonatomic, strong) NSString *learnNum; //学习人数
+
+@property (nonatomic, strong) NSString *discussNum; //评论数
+
+@property (nonatomic, strong) NSString *sDuration; //课程时长
+
+@property (nonatomic, strong) NSString *typeName; //业务分类名称
+
+@property (nonatomic, strong) NSString *nickname; //昵称
+
+@end

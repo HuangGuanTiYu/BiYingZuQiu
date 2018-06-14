@@ -1,0 +1,16 @@
+//
+//  TeacherListCell.h
+//  MoveSchool
+//
+//  Created by edz on 2017/8/23.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class TeacherListModel;
+
+@interface TeacherListCell : UITableViewCell
+
+@property (nonatomic, strong) TeacherListModel *model;
+
+@end

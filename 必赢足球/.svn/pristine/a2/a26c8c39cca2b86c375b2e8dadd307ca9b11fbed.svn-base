@@ -1,0 +1,19 @@
+//
+//  SalongCell.h
+//  MoveSchool
+//
+//  Created by edz on 2017/8/24.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class ShalonModel;
+
+@interface SalongCell : UITableViewCell
+
+@property (nonatomic, strong) ShalonModel *model;
+
+//type 1已报名 2未报名
+@property (nonatomic, assign) int type;
+
+@end

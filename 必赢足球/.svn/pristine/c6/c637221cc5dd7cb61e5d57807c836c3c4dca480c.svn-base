@@ -1,0 +1,115 @@
+//
+//  SpecialDetailTestCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/10/27.
+//
+//
+
+#import "SpecialDetailTestCell.h"
+#import "MyTestModel.h"
+
+@interface SpecialDetailTestCell()
+
+//标题
+@property (nonatomic,strong) UILabel *titleLabel;
+
+//时长
+@property (nonatomic,strong) UILabel *timeLabel;
+
+//分数
+@property (nonatomic, strong) UILabel *scoreLabel;
+
+@end
+
+@implementation SpecialDetailTestCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:14];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeLabel.textColor = AuxiliaryColor;
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.scoreLabel = [[UILabel alloc] init];
+        self.scoreLabel.textAlignment = NSTextAlignmentRight;
+        self.scoreLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.scoreLabel.textColor = MainColor;
+        self.scoreLabel.hidden = YES;
+        [self.contentView addSubview:self.scoreLabel];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = SepaViewColor;
+        [self.contentView addSubview:self.sepaView];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.titleLabel.frame = CGRectMake(15, 15, 0, 40);
+    [self.titleLabel sizeToFit];
+    self.titleLabel.width = self.contentView.width - 50 - 30;
+
+    self.timeLabel.frame = CGRectMake(15, CGRectGetMaxY(self.titleLabel.frame) + 12, self.contentView.width - 30, 20);
+    [self.timeLabel sizeToFit];
+    self.timeLabel.width = self.contentView.width - 30;
+    
+    self.sepaView.frame = CGRectMake(15, CGRectGetMaxY(self.timeLabel.frame) + 15, self.contentView.width - 15, 0.5);
+    
+    self.scoreLabel.frame = CGRectMake(self.contentView.width - 50 - 15, 0, 50, 40);
+    self.scoreLabel.centerY = self.titleLabel.centerY;
+}
+
+- (void)setModel:(MyTestModel *)model
+{
+    _model = model;
+    
+    self.titleLabel.text = model.title;
+    
+    //未完成
+    self.scoreLabel.hidden = NO;
+    self.timeLabel.text = [NSString stringWithFormat:@"时长：%@分      %@人已参加",model.timeLength,model.usernum];
+    
+    if ([model.status intValue] == 1) {
+        self.scoreLabel.text = [NSString stringWithFormat:@"%d分",model.score];
+        self.scoreLabel.textColor = AuxiliaryColor;
+    }else if ([model.status intValue] == 0)
+    {
+        self.scoreLabel.text = @"未通过";
+        self.scoreLabel.textColor = AuxiliaryColor;
+    }else if ([model.status intValue] == 2)
+    {
+        self.scoreLabel.text = @"阅卷中";
+        self.scoreLabel.textColor = AuxiliaryColor;
+    }else if ([model.status intValue] == 3)
+    {
+        self.scoreLabel.text = @"去考试";
+        self.scoreLabel.textColor = MainColor;
+    }else if ([model.status intValue] == 4)
+    {
+        self.scoreLabel.text = @"去补考";
+        self.scoreLabel.textColor = MainColor;
+    }else if ([model.status intValue] == 5)
+    {
+        self.scoreLabel.text = @"已过期";
+        self.scoreLabel.textColor = AuxiliaryColor;
+    }else
+    {
+        self.scoreLabel.text = @"";
+        self.scoreLabel.textColor = AuxiliaryColor;
+    }
+}
+
+@end

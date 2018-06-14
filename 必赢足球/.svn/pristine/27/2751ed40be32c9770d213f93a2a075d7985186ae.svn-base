@@ -1,0 +1,16 @@
+//
+//  StudyPraises.m
+//  MoveSchool
+//
+//  Created by edz on 2017/5/8.
+//
+//
+
+#import "StudyPraises.h"
+#import "MJExtension.h"
+
+@implementation StudyPraises
+
+MJCodingImplementation
+
+@end

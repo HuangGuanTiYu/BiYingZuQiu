@@ -1,0 +1,217 @@
+//
+//  SearchListViewController.m
+//  zhitongti
+//
+//  Created by edz on 2016/11/29.
+//  Copyright © 2016年 caobohua. All rights reserved.
+//
+
+#import "SearchListViewController.h"
+#import "MineStudyCourseViewController.h"
+#import "CourseView.h"
+#import "AFNetworking.h"
+#import "MJExtension.h"
+#import "MBProgressHUD.h"
+#import "UIView+Extension.h"
+#import "AFNetWW.h"
+#import "ColorTypeTools.h"
+#import "UIView+Extension.h"
+#import "NOContentView.h"
+#import "LiveTableViewCell.h"
+#import "SalonTableViewCell.h"
+#import "CourseSpecialViewCell.h"
+#import "SalonModel.h"
+#import "LiveModel.h"
+#import "MainWebController.h"
+#import "CourseDetailArrayModel.h"
+#import "CourseDetailController.h"
+#import "CourseSpecialDetailViewController.h"
+
+#define ksize [UIScreen mainScreen].bounds.size
+
+@interface SearchListViewController ()<UITableViewDelegate,UITableViewDataSource,UIWebViewDelegate>
+
+@property(nonatomic,strong)UITableView *tableview;
+@property(nonatomic,assign)NSInteger index;
+@end
+@implementation SearchListViewController
+-(UITableView *)tableview{
+    if (!_tableview) {
+        _tableview =[[UITableView alloc]initWithFrame:CGRectMake(5,0, self.view.width-10, self.view.height - 64)];
+        _tableview.delegate=self;
+        _tableview.dataSource=self;
+        _tableview.separatorStyle=UITableViewCellSeparatorStyleNone;
+        _tableview.showsHorizontalScrollIndicator=NO;
+        _tableview.showsVerticalScrollIndicator=NO;
+        [_tableview registerClass:[CourseView class] forCellReuseIdentifier:@"CourseView"];
+        [_tableview registerClass:[CourseSpecialViewCell class] forCellReuseIdentifier:@"CourseSpecialViewCell"];
+        [_tableview registerClass:[SalonTableViewCell class] forCellReuseIdentifier:@"SalonTableViewCell"];
+        [_tableview registerClass:[LiveTableViewCell class] forCellReuseIdentifier:@"LiveTableViewCell"];
+    }
+    return _tableview;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    [self.navigationController.navigationBar setBackgroundColor:[UIColor whiteColor]]; // 设置导航栏背景颜色
+    self.title = [ManyLanguageMag  gethCourseStrWith:@"搜索列表"];
+    [self.view addSubview:self.tableview];
+}
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    return self.arr.count;
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CourseDetailModel *model =self.arr[indexPath.row];
+    if ([model.type isEqualToString:@"1"]) {
+        CourseView *cell=[[CourseView alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"CourseView"];
+        cell.fromeVC = @"课程";
+        cell.model = self.arr[indexPath.row];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+        
+    }else if([model.type isEqualToString:@"2"]){
+        LiveTableViewCell *cell =[[LiveTableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LiveTableViewCell"];
+        CourseDetailModel *modelX = self.arr[indexPath.row];
+        LiveModel *model =  [[LiveModel alloc]init];
+        model.imageurl  =  modelX.imgurl;
+        model.title = modelX.title;
+        model.teacher  =  modelX.teacher;
+        model.teacherlv  =  modelX.teacherlv;
+        model.startTime  = modelX.starttime;
+        cell.model = model;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+    }else if  ([model.type isEqualToString:@"3"]){
+        SalonTableViewCell  *cell=[[SalonTableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SalonTableViewCell"];
+        CourseDetailModel *modelX = self.arr[indexPath.row];
+        SalonModel *model=[[SalonModel alloc]init];
+        model.imgurl =    modelX.imgurl;
+        model.starttime =  modelX.starttime;
+        model.limitPepole  =  modelX.limitPepole;
+        model.userstatus =   modelX.status;
+        model.title =  modelX.title;
+        model.learnNum =  modelX.learnNum;
+        cell.model = model;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+    }else{
+        CourseSpecialViewCell  *cell = [[CourseSpecialViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"CourseSpecialViewCell"];
+        CourseDetailModel  *MDL= self.arr[indexPath.row];
+        CourseSpecialModel  *model =[[CourseSpecialModel alloc]init];
+        model.pic =  MDL.picurl;
+        model.descr =  MDL.desc;
+        model.createtime = MDL.starttime;
+        model.SpecialID =  MDL.course_id;
+        model.classesname = MDL.title;
+        cell.model =  model;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+    }
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CourseDetailModel*model = self.arr[indexPath.row];
+    if ([model.type isEqualToString:@"1"]) {
+    //课程
+        return self.view.width/5+20;
+    }else if ([model.type isEqualToString:@"2"]) {//直播
+        return self.view.width/5+20;
+    }else if ([model.type isEqualToString:@"3"]) {//沙龙
+        return self.view.width/5+20;
+    }else{//专题
+        return  self.view.width*0.4;
+    }
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    CourseDetailModel*model = self.arr[indexPath.row];
+    if ([model.type isEqualToString:@"1"]) {
+        //考试详情
+        if ([model.btnstatus isEqualToString:@"2"] || [model.btnstatus isEqualToString:@"3"]) {
+            MainWebController *examController = [[MainWebController alloc] init];
+            NSString *uelStr = [NSString stringWithFormat:@"%@%@?token=%@&testid=%@",NetHeader,CourseTest,[UserInfoTool getUserInfo].token,model.mainid];
+            examController.url = uelStr;
+            examController.webTitle = @"考试详情";
+            [self.navigationController pushViewController:examController animated:YES];
+        }else{
+            
+            if (model.mainid==nil) {
+                model.mainid=@"";
+            }
+            NSString *chapterid  = model.chapterid ? model.chapterid : model.course_id;
+            NSString  *mainid  = model.mainid ? model.mainid : model.courseid;
+            
+            
+            NSDictionary *parameter=@{
+                                      @"chapterid":chapterid
+                                      };
+            NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CourseAdd,[UserInfoTool getUserInfo].token];
+            
+            [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:parameter success:^(id responseDic) {
+                NSInteger code=[responseDic[@"rescode"] integerValue];
+                
+                if (code == 10000)
+                {
+                    NSDictionary *parameter=@{
+                                              @"chapterid": chapterid,
+                                              @"mainid" :mainid
+                                              };
+                    NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CourseDetail,[UserInfoTool getUserInfo].token];
+                    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:parameter success:^(id responseDic) {
+                        NSInteger code = [responseDic[@"rescode"] integerValue];
+                        
+                        if (code==10000){
+                            //到课程详情
+                            CourseDetailArrayModel *courseDetail = [CourseDetailArrayModel objectWithKeyValues:responseDic[@"data"]];
+                            NSArray *captions = [CourseDetailModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+                            
+                            //到课程详情
+                            CourseDetailController *courseDetailVc = [[CourseDetailController alloc] init];
+                            courseDetailVc.courseDetail = courseDetail;
+                            if (captions.count > 0) {
+                                courseDetailVc.captions = captions;
+                            }
+                            [self.navigationController pushViewController:courseDetailVc animated:YES];
+                        }
+                    } fail:^(NSError *error) {
+                        [MBProgressHUD showText:@"请联系管理员" inview:self.view];
+                    }];
+                }else if(code == 30030)
+                {
+                    [MBProgressHUD showError:@"未开通服务用户免费课程已达上限"];
+                }
+                
+            } fail:^(NSError *error) {
+                [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+            }];
+        }
+        
+    }else if ([model.type isEqualToString:@"2"]) {
+        
+        NSString *uelStr=[NSString stringWithFormat:@"%@%@?liveid=%@&appkey=%@&locale=%@",NetHeader,Liveplay,model.course_id,appkey,[ManyLanguageMag getTypeWithWebDiscript]];
+        
+        MainWebController *vc = [[MainWebController alloc] init];
+        vc.url = uelStr;
+        vc.title = @"直播详情";
+        [self.navigationController pushViewController:vc animated:YES];
+        
+    }else if ([model.type isEqualToString:@"3"]) {
+        
+        MainWebController *shalong = [[MainWebController alloc] init];
+        NSString *url = [NSString stringWithFormat:@"%@mh5/shalong/shalongdetail?id=%@&locale=%@",NetHeader,model.course_id,[ManyLanguageMag getTypeWithWebDiscript]];
+        shalong.url = url;
+        shalong.webTitle = @"沙龙详情";
+        [self.navigationController pushViewController:shalong animated:YES];
+    }else{
+        //专题
+        CourseSpecialDetailViewController *vc=[CourseSpecialDetailViewController new];
+        vc.ID = model.course_id;
+        [self.navigationController pushViewController:vc animated:1];
+    }
+}
+
+@end

@@ -1,0 +1,305 @@
+//
+//  MineDataController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/18.
+//
+//
+
+#import "MineDataController.h"
+#import "MineDataCell.h"
+#import "ChangeNicknameController.h"
+#import "ChangeSexController.h"
+#import "ChangeMobileController.h"
+#import "AFNetWW.h"
+#import "UploadFileModel.h"
+#import "MJExtension.h"
+
+@interface MineDataController ()<UITableViewDelegate, UITableViewDataSource, UIActionSheetDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate,ChangeNicknameControllerDelegate, ChangeSexControllerDelegate,ChangeMobileControllerDelegate>
+
+@property (nonatomic, strong) NSArray *titles;
+
+@property (nonatomic, strong) NSMutableArray *subTitles;
+
+//头像cell
+@property (nonatomic, strong) MineDataCell *headerCell;
+
+//昵称cell
+@property (nonatomic, strong) MineDataCell *nickNameCell;
+
+//性别cell
+@property (nonatomic, strong) MineDataCell *sexCell;
+
+//手机号cell
+@property (nonatomic, strong) MineDataCell *mobileCell;
+
+@end
+
+@implementation MineDataController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"个人资料";
+    
+    self.titles = @[@"头像",@"昵称",@"性别",@"手机号",@"邮箱",@"",@"工号",@"部门",@"公司"];
+    
+    NSString *sex = [UserInfoTool getUserInfo].sex;
+    NSString *sexName = @"";
+    if ([sex intValue] == 1) {
+        sexName = @"男";
+    }else if ([sex intValue] == 2) {
+        sexName = @"女";
+    }else if ([sex intValue] == 4) {
+        sexName = @"保密";
+    }
+    
+    NSString *mobile = [UserInfoTool getUserInfo].mobile;
+    NSString *email = [UserInfoTool getUserInfo].email;
+    NSString *username = [UserInfoTool getUserInfo].username;
+    NSString *department = [UserInfoTool getUserInfo].department;
+    NSString *company = [UserInfoTool getUserInfo].company;
+    
+    NSArray *titles = @[@"",[UserInfoTool getUserInfo].nickname,sexName.length > 0 ? sexName : @"",mobile.length > 0 ? mobile : @"",email.length > 0 ? email : @"",@"",username.length > 0 ? username : @"",department.length > 0 ? department : @"",company.length > 0 ? company : @""];
+    
+    self.subTitles = [[NSMutableArray alloc] initWithArray:titles];
+    
+    [self setUpUI];
+}
+
+- (void) setUpUI
+{
+
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    tableView.tableFooterView = [[UIView alloc] init];
+
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return 9;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (indexPath.row == 5) {
+        static NSString *ID = @"cell";
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.contentView.backgroundColor = ViewBackColor;
+        return cell;
+    }
+    
+    static NSString *ID = @"MineDataCell";
+    MineDataCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    
+    if (cell == nil) {
+        cell = [[MineDataCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    
+    //头像
+    if (indexPath.row == 0) {
+        self.headerCell = cell;
+    }
+    //昵称
+    else if (indexPath.row == 1)
+    {
+        self.nickNameCell = cell;
+    }
+    //性别
+    else if (indexPath.row == 2)
+    {
+        self.sexCell = cell;
+    }
+    
+    //手机号
+    else if (indexPath.row == 3)
+    {
+        self.mobileCell = cell;
+    }
+    
+    cell.title = self.titles[indexPath.row];
+    cell.subTitle = self.subTitles[indexPath.row];
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];//选中后的反显颜色即刻消失
+
+    switch (indexPath.row) {
+        //头像
+        case 0:
+        {
+            UIActionSheet* actionSheet = [[UIActionSheet alloc]
+                                          initWithTitle:nil
+                                          delegate:self
+                                          cancelButtonTitle:@"取消"
+                                          destructiveButtonTitle:nil
+                                          otherButtonTitles:@"从相册中选择",@"拍照",nil];
+            [actionSheet showInView:self.view];
+            
+            break;
+        }
+            
+        //昵称
+        case 1:
+        {
+            
+            NSString *name = self.subTitles[indexPath.row];
+            ChangeNicknameController *nickNameVc = [[ChangeNicknameController alloc] init];
+            nickNameVc.name = name;
+            nickNameVc.delegate = self;
+            [self.navigationController pushViewController:nickNameVc animated:YES];
+            break;
+        }
+           
+        //性别
+        case 2:
+        {
+            ChangeSexController *changeSex = [[ChangeSexController alloc] init];
+            changeSex.delegate = self;
+            NSString *name = self.subTitles[indexPath.row];
+            changeSex.sex = name;
+            [self.navigationController pushViewController:changeSex animated:YES];
+            break;
+        }
+            
+        //手机号
+        case 3:
+        {
+            ChangeMobileController *mobileVc = [[ChangeMobileController alloc] init];
+            mobileVc.delegate = self;
+            [self.navigationController pushViewController:mobileVc animated:YES];
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (indexPath.row == 5) {
+        return mainSpacing;
+    }
+    
+    return 44;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+#pragma mark 选择上传方式
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (buttonIndex == 2) {
+        return;
+    }
+    
+    UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
+    imagePicker.delegate = self;
+    imagePicker.allowsEditing = YES;
+    
+    if (buttonIndex == 1) { //照相机
+        imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
+    }else if(buttonIndex == 0)
+    {
+        imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    }
+    [self presentViewController:imagePicker animated:YES completion:nil];
+    
+}
+
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info
+{
+    UIImage *img = [info objectForKey:UIImagePickerControllerEditedImage];
+    
+    [self sendPhoto : img];
+    
+    [picker dismissViewControllerAnimated:YES completion:nil];
+}
+
+#pragma mark 发送带有图片的
+- (void) sendPhoto : (UIImage *) image
+{
+    NSString *header = [MainUserDefaults objectForKey:FileServerUrl];
+    NSString *url = [NSString stringWithFormat:@"%@/%@?token=%@",header,UploadImage,[UserInfoTool getUserInfo].token];
+    
+    AFHTTPRequestOperationManager *manager = [[AFNetWW sharedAFNetWorking] getAFNManager];
+    
+    [manager POST:url parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+        [formData appendPartWithFileData:UIImageJPEGRepresentation(image, 0.5) name:@"file" fileName:@"test.jpg" mimeType:@"image/jpg"];
+    } success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSArray *models =  [UploadFileModel objectArrayWithJSONData:responseObject];
+        NSMutableArray *attachs = [NSMutableArray array];
+        for (UploadFileModel *model in models) {
+            [attachs addObject:model];
+        }
+
+        UploadFileModel *model = [attachs firstObject];
+        [self sendData:model.url image : image];
+        
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        [MBProgressHUD showError:@"发送失败"];
+    }];
+    
+}
+
+- (void) sendData : (NSString *) url image : (UIImage *) image
+{
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,ChangeKeyValue,[UserInfoTool getUserInfo].token];
+    
+    NSDictionary *dic=@{
+                        @"businessid":[UserInfoTool getUserInfo].ID,
+                        @"businesscode":@"10000",
+                        @"key":@"headpic_path",
+                        @"value":url
+                        };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:likeUrl WithParameters:dic success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+             self.headerCell.headerImage.image = image;
+             
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+}
+
+- (void)changeNickname:(NSString *)name
+{
+
+    self.nickNameCell.subTitle = name;
+}
+
+- (void)changeSex:(NSString *)sex
+{
+
+    [self.subTitles replaceObjectAtIndex:2 withObject:sex];
+    self.sexCell.subTitle = sex;
+}
+
+- (void)changeMobile:(NSString *)mobile
+{
+
+    self.mobileCell.subTitle = mobile;
+}
+
+@end

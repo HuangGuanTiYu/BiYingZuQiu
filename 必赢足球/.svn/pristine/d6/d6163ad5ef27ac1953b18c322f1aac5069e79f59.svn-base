@@ -1,0 +1,501 @@
+//
+//  SettingController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/17.
+//
+//
+
+#import "SettingController.h"
+#import "SettingCell.h"
+#import "ChangePasswordController.h"
+#import "SetLanguageController.h"
+#import <UMSocialCore/UMSocialCore.h>
+#import "ShareButton.h"
+#import "ColorTypeTools.h"
+#import "SettingCriticismsFeedbackViewController.h"
+#import "AboutMineController.h"
+#import "AppDelegate.h"
+#import "AFNetWW.h"
+#import "MenusModelTool.h"
+#import "MenusModel.h"
+#import "MJExtension.h"
+
+typedef enum {
+    /** 分享到移动学堂 */
+    ShareSchool,
+    /** 分享到QQ */
+    ShareToQQ,
+    /** 分享到微信 */
+    ShareToWechat,
+    /** 分享到微博 */
+    ShareToSina,
+    /** 分享到QQ会话 */
+    ShareToQQChat,
+    /** 分享到微信朋友圈 */
+    ShareToWechatTimeline
+} ShareType;
+
+@interface SettingController ()<UITableViewDelegate, UITableViewDataSource, UIActionSheetDelegate>
+
+//标题数组
+@property(nonatomic, strong) NSArray *titleOnes;
+
+//标题数组
+@property(nonatomic, strong) NSArray *titleTwos;
+
+//遮罩
+@property(strong, nonatomic) UIView *shareMaskView;
+
+//分享模块
+@property(nonatomic, strong) UIView *templateView;
+
+//分享title
+@property(nonatomic, copy) NSString *shareTitle;
+
+//分享描述
+@property(nonatomic, copy) NSString *shareSummary;
+
+//分享缩略图
+@property(nonatomic, strong) id shareImage;
+
+//分享地址URL
+@property(nonatomic, copy) NSString *shareUrl;
+
+@end
+
+@implementation SettingController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setUpData];
+    
+    [self setUpUI];
+}
+
+#pragma mark 初始化数据
+- (void) setUpData
+{
+    self.titleOnes = @[@"密码修改",@"消息推送",@"分享APP"];
+    
+    self.titleTwos = @[@"清除缓存",@"帮助反馈",@"关于我们"];
+
+}
+
+#pragma mark 初始化UI
+- (void) setUpUI
+{
+    self.title = @"设置";
+    
+    //列表
+    UITableView *tableView = [[UITableView alloc]initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"SettingCell";
+    SettingCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[SettingCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    if (indexPath.section == 0) {
+        cell.title = self.titleOnes[indexPath.row];
+        
+        if (indexPath.row == self.titleOnes.count - 1) {
+            cell.divisionView.hidden = YES;
+        }else
+        {
+            cell.divisionView.hidden = NO;
+        }
+    }else
+    {
+        cell.title = self.titleTwos[indexPath.row];
+        
+        if (indexPath.row == self.titleTwos.count - 1) {
+            cell.divisionView.hidden = YES;
+        }else
+        {
+            cell.divisionView.hidden = NO;
+        }
+    }
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (indexPath.section == 0) {
+        switch (indexPath.row) {
+            // 密码修改
+            case 0:
+            {
+                ChangePasswordController *changePVc = [[ChangePasswordController alloc] init];
+                [self.navigationController pushViewController:changePVc animated:YES];
+                break;
+            }
+                
+            // 语言设置
+//            case 1:
+//            {
+//                SetLanguageController *changePVc = [[SetLanguageController alloc] init];
+//                [self.navigationController pushViewController:changePVc animated:YES];
+//                break;
+//            }
+                
+            //消息推送
+            case 1:
+            {
+                SettingCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+                
+                NSString *temp;
+                
+                if ([cell.cacheLabel.text isEqualToString:@"已开启"]) {
+                    [MainUserDefaults setBool:YES forKey:MessageClose];
+                    temp = @"未开启";
+                }else
+                {
+                    [MainUserDefaults setBool:NO forKey:MessageClose];
+                    temp = @"已开启";
+                }
+                
+                cell.cacheLabel.text = temp;
+                
+                [MainUserDefaults synchronize];
+                [MBProgressHUD showSuccess:@"设置成功"];
+                
+                break;
+            }
+                
+            //分享
+            case 2:
+            {
+                [self onShare];
+                break;
+            }
+            default:
+                break;
+        }
+    }else if(indexPath.section == 1)
+    {
+        switch (indexPath.row) {
+            //清除缓存
+            case 0:
+            {
+                NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+                NSString *cachesDir = [paths objectAtIndex:0];
+                
+                SettingCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+                
+                [ColorTypeTools clearCache:cachesDir];
+                [MBProgressHUD showSuccess:@"清理完成"];
+                cell.cacheLabel.text = @"清除缓存(0.00K)";
+                break;
+            }
+            
+            //帮助反馈
+            case 1:
+            {
+                SettingCriticismsFeedbackViewController *vc =[[SettingCriticismsFeedbackViewController alloc] init];
+                [self.navigationController pushViewController:vc animated:YES];
+                break;
+            }
+                
+            //关于我们
+            case 2:
+            {
+                AboutMineController *vc =[[AboutMineController alloc] init];
+                vc.url = [NSString stringWithFormat:@"%@%@",NetHeader,SettingAboutUs];
+                [self.navigationController pushViewController:vc animated:YES];
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];// 取消选中
+}
+
+-(void)onShare{
+    
+    self.shareTitle = @"移动学堂";
+    self.shareSummary = @"致力于为客户提供专业化的在线培训服务及系统化的培训解决方案，移动学堂聚合了最优质的课程资源、讲师资源，鼓励用户参与分享，打造具有持续学习能力的培训生态圈。";
+    self.shareImage = [UIImage imageNamed:@"logo"];
+    
+    BOOL isInstallQQ = [[UMSocialManager defaultManager] isInstall:UMSocialPlatformType_QQ];
+    
+    BOOL isInstallWecha = [[UMSocialManager defaultManager] isInstall:UMSocialPlatformType_WechatSession];
+    
+    BOOL isInstallSina = [[UMSocialManager defaultManager] isInstall:UMSocialPlatformType_Sina];
+    
+    NSMutableArray *shareArray = [NSMutableArray array];
+    
+    if (isInstallWecha) {
+        
+        ShareButton *weChatButton = [[ShareButton alloc] init];
+        weChatButton.tag = ShareToWechat;
+        [weChatButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [weChatButton setTitle:@"微信好友" forState:UIControlStateNormal];
+        [weChatButton setImage:[UIImage imageNamed:@"share_02"] forState:UIControlStateNormal];
+        [shareArray addObject:weChatButton];
+        
+        ShareButton *weChatButtonTimeline = [[ShareButton alloc] init];
+        weChatButtonTimeline.tag = ShareToWechatTimeline;
+        [weChatButtonTimeline setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [weChatButtonTimeline setTitle:@"朋友圈" forState:UIControlStateNormal];
+        [weChatButtonTimeline setImage:[UIImage imageNamed:@"share_03"] forState:UIControlStateNormal];
+        [shareArray addObject:weChatButtonTimeline];
+        
+    }
+    
+    if (isInstallQQ) {
+        
+        ShareButton *qqButton = [[ShareButton alloc] init];
+        qqButton.tag = ShareToQQChat;
+        [qqButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [qqButton setTitle:@"QQ好友" forState:UIControlStateNormal];
+        [qqButton setImage:[UIImage imageNamed:@"share_04"] forState:UIControlStateNormal];
+        [shareArray addObject:qqButton];
+        
+        ShareButton *qqZoneButton = [[ShareButton alloc] init];
+        qqZoneButton.tag = ShareToQQ;
+        [qqZoneButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [qqZoneButton setTitle:@"QQ空间" forState:UIControlStateNormal];
+        [qqZoneButton setImage:[UIImage imageNamed:@"share_05"] forState:UIControlStateNormal];
+        [shareArray addObject:qqZoneButton];
+    }
+    
+    if (isInstallSina) {
+        ShareButton *sinaButton = [[ShareButton alloc] init];
+        sinaButton.tag = ShareToSina;
+        [sinaButton setTitle:@"微博" forState:UIControlStateNormal];
+        [sinaButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [sinaButton setImage:[UIImage imageNamed:@"share_06"] forState:UIControlStateNormal];
+        [shareArray addObject:sinaButton];
+    }
+    
+    if (shareArray.count > 0) {
+        
+        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        
+        UIView *shareView = [[UIView alloc] initWithFrame:window.bounds];
+        self.shareMaskView = shareView;
+        [shareView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(shareViewClick)]];
+        [window addSubview:shareView];
+        
+        //遮罩
+        UIView *maskView = [[UIView alloc] initWithFrame:shareView.bounds];
+        maskView.backgroundColor = [UIColor blackColor];
+        maskView.alpha = 0.7;
+        [shareView addSubview:maskView];
+        
+        //分享模块
+        UIView *templateView = [[UIView alloc] initWithFrame:CGRectMake(0, shareView.height, shareView.width, 110)];
+        self.templateView = templateView;
+        templateView.backgroundColor = [UIColor whiteColor];
+        [shareView addSubview:templateView];
+        
+        //按钮宽高
+        CGFloat buttonSize = 55;
+        
+        //间距
+        CGFloat spaing = (templateView.width - (shareArray.count) * buttonSize) / (shareArray.count + 1);
+        
+        for (int i = 0; i < shareArray.count; i ++) {
+            ShareButton *button = shareArray[i];
+            [button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+            button.frame = CGRectMake(i * (buttonSize + spaing) + spaing, 0, buttonSize, buttonSize * 2);
+            button.centerY = templateView.height * 0.5;
+            [templateView addSubview:button];
+        }
+        
+        [UIView animateWithDuration:0.3 animations:^{
+            templateView.y = shareView.height - templateView.height;
+        }];
+    }
+    
+}
+
+#pragma mark 分享按钮点击
+- (void) buttonClick : (UIButton *) button
+{
+    [self shareViewClickWithNoAnimate];
+    
+    self.shareUrl = [NSString stringWithFormat:@"%@/appmgr/down",NetHeader];;
+    
+    switch (button.tag) {
+        case ShareToQQ:
+            [self shareWebPageToPlatformType:UMSocialPlatformType_Qzone];
+            break;
+        case ShareToSina:
+            [self shareWebPageToPlatformType:UMSocialPlatformType_Sina];
+            break;
+        case ShareToWechatTimeline:
+            [self shareWebPageToPlatformType:UMSocialPlatformType_WechatTimeLine];
+            break;
+        case ShareToQQChat:
+            [self shareWebPageToPlatformType:UMSocialPlatformType_QQ];
+        case ShareToWechat:
+            [self shareWebPageToPlatformType:UMSocialPlatformType_WechatSession];
+            break;
+        default:
+            break;
+    }
+}
+
+#pragma mark 删除分享平台不加动画
+- (void) shareViewClickWithNoAnimate
+{
+    if (self.shareMaskView!= nil && self.shareMaskView.superview != nil) {
+        [self.templateView removeFromSuperview];
+        [self.shareMaskView removeFromSuperview];
+    }
+}
+
+#pragma mark 组个数
+- (NSInteger) numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return 2;
+}
+
+#pragma mark 行个数
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return section == 0 ? self.titleOnes.count : self.titleTwos.count;
+}
+
+#pragma mark section头部间距
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return 0.01f;//section头部高度
+}
+
+#pragma mark section尾部间距
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+{
+    return section == 0 ? 10.0f : 78.0f;
+}
+
+#pragma mark 行高
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 44;
+}
+
+- (UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    if (section == 1) {
+        UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 78)];
+        UIButton *logout = [[UIButton alloc] initWithFrame:CGRectMake(0, mainSpacing, footerView.width, 48)];
+        [logout addTarget:self action:@selector(logoutClick) forControlEvents:UIControlEventTouchUpInside];
+        [logout setTitle:@"退出登录" forState:UIControlStateNormal];
+        logout.titleLabel.textAlignment = NSTextAlignmentCenter;
+        logout.backgroundColor = [UIColor whiteColor];
+        [logout setTitleColor:MainColor forState:UIControlStateNormal];
+        logout.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        [footerView addSubview:logout];
+        return footerView;
+    }
+    
+    UIView *footerView = [[UIView alloc] init];
+    footerView.backgroundColor = [UIColor clearColor];
+    return footerView;
+}
+
+#pragma mark 分享到平台
+- (void)shareWebPageToPlatformType:(UMSocialPlatformType)platformType
+{
+    //创建分享消息对象
+    UMSocialMessageObject *messageObject = [UMSocialMessageObject messageObject];
+    
+    UMShareWebpageObject *shareObject = [UMShareWebpageObject shareObjectWithTitle:self.shareTitle descr:self.shareSummary thumImage:self.shareImage];
+    
+    //设置网页地址
+    shareObject.webpageUrl = self.shareUrl;
+    
+    //分享消息对象设置分享内容对象
+    messageObject.shareObject = shareObject;
+    
+    //调用分享接口
+    [[UMSocialManager defaultManager] shareToPlatform:platformType messageObject:messageObject currentViewController:self completion:^(id data, NSError *error) {
+        if (error) {
+            
+        }else{
+            
+        }
+    }];
+}
+
+
+
+#pragma mark 退出登录
+- (void) logoutClick
+{
+    
+    UIActionSheet* actionSheet = [[UIActionSheet alloc]
+                                  initWithTitle:nil
+                                  delegate:self
+                                  cancelButtonTitle:@"取消"
+                                  destructiveButtonTitle:nil
+                                  otherButtonTitles:@"退出登录",nil];
+    [actionSheet showInView:self.view];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+#pragma mark 遮罩点击
+- (void) shareViewClick
+{
+    if (self.shareMaskView!= nil && self.shareMaskView.superview != nil) {
+        [UIView animateWithDuration:0.3 animations:^{
+            self.templateView.y = self.shareMaskView.height;
+        } completion:^(BOOL finished) {
+            [self.templateView removeFromSuperview];
+            [self.shareMaskView removeFromSuperview];
+        }];
+    }
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (buttonIndex == 1) {
+        return;
+    }
+    
+    [UserInfoTool delegateUserInfo];
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,GetMenus,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic) {
+        
+        NSArray *menus = [MenusModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+        
+        [MenusModelTool saving:menus];
+        
+        if ([self.delegate respondsToSelector:@selector(logoutClick)]) {
+            [self.delegate logoutClick];
+        }
+        
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HAVEPUSH" object:nil];
+
+        [self.navigationController popViewControllerAnimated:YES];
+        
+    } fail:^(NSError *error) {
+        
+    }];
+}
+
+
+@end

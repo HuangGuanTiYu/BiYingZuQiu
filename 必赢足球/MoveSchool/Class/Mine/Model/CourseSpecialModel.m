@@ -1,0 +1,55 @@
+//
+//  CourseSpecialModel.m
+//  zhitongti
+//
+//  Created by yuhongtao on 16/7/15.
+//  Copyright © 2016年 caobohua. All rights reserved.
+//
+
+#import "CourseSpecialModel.h"
+#import "MJExtension.h"
+
+@implementation CourseSpecialModel
+
+- (NSDictionary *)replacedKeyFromPropertyName{
+    return @{
+             @"SpecialID" : @"id"
+             };
+}
+
+- (void)setImgurl:(NSString *)imgurl
+{
+    _imgurl = imgurl;
+    
+    _pic = imgurl;
+}
+
+- (void)setIndate:(NSString *)indate
+{
+    _indate = indate;
+    
+    _createtime = indate;
+}
+
+- (void)setFavorite_id:(NSString *)favorite_id
+{
+    _favorite_id = favorite_id;
+    
+    _SpecialID = favorite_id;
+}
+
+- (void)setTitle:(NSString *)title
+{
+    _title = title;
+    
+    _classesname = title;
+}
+
+- (void)setImage:(NSString *)image
+{
+    _image = image;
+    
+    _pic = image;
+}
+
+@end

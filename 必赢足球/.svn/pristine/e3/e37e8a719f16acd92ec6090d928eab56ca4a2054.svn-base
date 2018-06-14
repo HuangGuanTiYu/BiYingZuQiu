@@ -1,0 +1,16 @@
+//
+//  CommentCell.h
+//  MoveSchool
+//
+//  Created by edz on 2017/8/31.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class CommentModel;
+
+@interface CommentCell : UITableViewCell
+
+@property (nonatomic, strong) CommentModel *model;
+
+@end

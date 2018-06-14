@@ -1,0 +1,65 @@
+//
+//  AddMusicController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/12/16.
+//
+//
+
+#import "AddMusicController.h"
+#import "AddMusicCell.h"
+
+@interface AddMusicController ()<UITableViewDelegate, UITableViewDataSource, AddMusicCellDelegate>
+
+@end
+
+@implementation AddMusicController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"选择背景音乐";
+    
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    tableView.tableFooterView = [[UIView alloc] init];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return 1;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"AddMusicCell";
+    AddMusicCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[AddMusicCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.addMusicCellDelegate = self;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    return cell;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 74;
+}
+
+- (void)addMusic:(AddMusicCell *)cell
+{
+
+    if ([self.addMusicControllerDelgate respondsToSelector:@selector(addMusic)]) {
+        [self.addMusicControllerDelgate addMusic];
+    }
+    
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
+@end

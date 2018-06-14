@@ -1,0 +1,73 @@
+//
+//  UIViewController+Extension.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/12.
+//
+//
+
+#import "UIViewController+Extension.h"
+#import "AFNetWW.h"
+#import "CourseDetailArrayModel.h"
+#import "MJExtension.h"
+#import "CourseDetailModel.h"
+#import "CourseDetailController.h"
+
+@implementation UIViewController (Extension)
+
+- (void) jumpToTypeContoller : (UIViewController *) controller CourseId : (NSString *) CourseId
+{
+    
+    NSDictionary *parameter=@{
+                              @"chapterid":CourseId
+                              };
+    NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CourseAdd,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:parameter success:^(id responseDic) {
+        NSInteger code=[responseDic[@"rescode"] integerValue];
+        
+        if (code == 10000)
+        {
+            NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CourseDetail,[UserInfoTool getUserInfo].token];
+            NSDictionary *parameter=@{
+                                      @"chapterid":CourseId
+                                      };
+            
+            [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:parameter success:^(id responseDic) {
+                
+                NSDictionary *dic = responseDic[@"data"];
+                
+                if (dic.allKeys.count != 0) {
+                    NSInteger code = [responseDic[@"rescode"] integerValue];
+                    if (code == 10000) {
+                        //到课程详情
+                        CourseDetailArrayModel *courseDetail = [CourseDetailArrayModel objectWithKeyValues:responseDic[@"data"]];
+                        NSArray *captions = [CourseDetailModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+                        
+                        //到课程详情
+                        CourseDetailController *courseDetailVc = [[CourseDetailController alloc] init];
+                        courseDetailVc.courseDetail = courseDetail;
+                        if (captions.count > 0) {
+                            courseDetailVc.captions = captions;
+                        }
+                        [self.navigationController pushViewController:courseDetailVc animated:YES];
+                    }
+                    
+                }else{
+                    [MBProgressHUD showText:@"课程已被删除" inview:self.view];
+                }
+                
+            } fail:^(NSError *error) {
+                [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+            }];
+        }else if(code == 30030)
+        {
+            [MBProgressHUD showError:@"未开通服务用户免费课程已达上限"];
+        }
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+}
+
+@end

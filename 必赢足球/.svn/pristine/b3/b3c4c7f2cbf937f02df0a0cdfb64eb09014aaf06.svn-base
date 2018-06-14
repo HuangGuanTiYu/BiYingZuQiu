@@ -1,0 +1,28 @@
+//
+//  CommentModel.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/31.
+//
+//
+
+#import "CommentModel.h"
+#import "MJExtension.h"
+#import "NSString+Extension.h"
+
+@implementation CommentModel
+
+- (NSDictionary *)replacedKeyFromPropertyName{
+    return @{
+             @"ID" : @"id"
+             };
+}
+
+- (void)setContent:(NSString *)content
+{
+    _content = content;
+        
+    _contentHeight = [NSString returnStringRect:content size:CGSizeMake([UIScreen mainScreen].bounds.size.width - 75, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]].height;
+}
+
+@end

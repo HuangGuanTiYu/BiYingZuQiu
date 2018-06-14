@@ -1,0 +1,109 @@
+//
+//  MyCareerViewController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/5/3.
+//
+//
+
+#import "MyCareerViewController.h"
+#import "AFNetWW.h"
+#import "MineCareerModel.h"
+#import "MJExtension.h"
+#import "MyCareerViewCell.h"
+#import "MineStudyViewController.h"
+
+@interface MyCareerViewController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, strong) NSMutableArray *datas;
+
+@end
+
+@implementation MyCareerViewController
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    self.title = [ManyLanguageMag getMineMenuStrWith:@"我的事业部"];
+    
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.height = self.view.height - 64;
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView = tableView;
+    tableView.delegate  = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    
+    //获取数据
+    [self getData];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.datas.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"cell";
+    MyCareerViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[MyCareerViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    MineCareerModel *model = self.datas[indexPath.row];
+    model.index = [NSString stringWithFormat:@"%ld",indexPath.row + 1];
+    cell.model = model;
+    return cell;
+}
+
+#pragma mark 获取数据
+- (void) getData
+{
+    self.datas = [NSMutableArray array];
+    
+    NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,UserCauseDepartment,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic) {
+        NSInteger code = [responseDic[@"rescode"] integerValue];
+
+        if (code == 10000) {
+            
+            self.datas = (NSMutableArray *)[MineCareerModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+
+            [self.tableView reloadData];
+        }
+
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:[ManyLanguageMag getTipStrWith:@"网络错误"]];
+    }];
+
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 60;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    MineCareerModel *model = self.datas[indexPath.row];
+    MineStudyViewController *studyVc = [[MineStudyViewController alloc] init];
+    studyVc.zttid = model.userid;
+    studyVc.SourceType = SourceCause;
+    [self.navigationController pushViewController:studyVc animated:YES];
+    
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+}
+
+@end

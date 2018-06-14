@@ -1,0 +1,160 @@
+//
+//  LiveListController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/22.
+//
+//
+
+#import "LiveListController.h"
+#import "AFNetWW.h"
+#import "HomePageModel.h"
+#import "MJExtension.h"
+#import "LiveListCell.h"
+#import "LiveListPastCell.h"
+#import "MainWebController.h"
+
+@interface LiveListController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) NSMutableArray *datas;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property(nonatomic, assign) BOOL isMoreData;
+
+@property(nonatomic, assign) int index;
+
+@end
+
+@implementation LiveListController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    
+    self.index = 0;
+    
+    [self setUpUI];
+    
+    self.datas = [NSMutableArray array];
+    
+    [self setUpData];
+}
+
+- (void) setUpUI
+{
+    self.title = @"直播";
+    
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.height = self.view.height - 64;
+    self.tableView = tableView;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+}
+
+- (void) setUpData
+{
+    NSDictionary *dic=@{
+                        @"index" : [NSString stringWithFormat:@"%d",self.index],
+                        @"count" : @"10"
+                        };
+    
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,GetMyList,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:likeUrl WithParameters:dic success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             NSArray *models = [HomePageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+             if (models.count > 0) {
+                 if (self.isMoreData) {
+                     [self.datas addObjectsFromArray:models];
+                     
+                 }else
+                 {
+                     self.datas = (NSMutableArray *)models;
+                 }
+             }
+             [self.tableView reloadData];
+             
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.datas.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    HomePageModel *model = self.datas[indexPath.row];
+
+    if ([model.businessid intValue] == 0) {
+        static NSString *ID = @"cell";
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.textLabel.text = model.title;
+        cell.textLabel.textColor = MainTextColor;
+        cell.textLabel.font = [UIFont systemFontOfSize:ys_f30];
+        return cell;
+    }else if([model.living isEqualToString:@"0"]) //往期回顾
+    {
+        static NSString *ID = @"HomePageCell";
+        LiveListPastCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[LiveListPastCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        
+        cell.model = model;
+        return cell;
+    }else
+    {
+        static NSString *ID = @"LiveListCell";
+        LiveListCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[LiveListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        
+        cell.model = model;
+        return cell;
+    }
+
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    HomePageModel *model = self.datas[indexPath.row];
+
+    if ([model.businessid intValue] == 0) {
+        return 45;
+    }else if([model.living isEqualToString:@"0"]) //往期回顾
+    {
+        return 106;
+    }
+    return 45 + self.view.width  / 2;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];//选中后的反显颜色即刻消失
+    
+    HomePageModel *model = self.datas[indexPath.row];
+
+    NSString *uelStr = [NSString stringWithFormat:@"%@%@?liveid=%@&appkey=%@&locale=%@",NetHeader,Liveplay,model.businessid,appkey,[ManyLanguageMag getTypeWithWebDiscript]];
+    
+    MainWebController *vc = [[MainWebController alloc] init];
+    vc.url = uelStr;
+    vc.title = model.title;
+    [self.navigationController pushViewController:vc animated:YES];
+
+}
+
+@end

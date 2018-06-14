@@ -1,0 +1,209 @@
+//
+//  HomePageCell.m
+//  NewSchoolBus
+//
+//  Created by edz on 2017/8/16.
+//  Copyright © 2017年 edz. All rights reserved.
+//
+
+#import "HomePageCell.h"
+#import "NSString+Extension.h"
+#import "HomePageModel.h"
+#import "UIImageView+WebCache.h"
+#import "UILabel+Extension.h"
+#import "BusinessTypeTool.h"
+#import "TBCityIconFont.h"
+
+@interface HomePageCell()
+
+//图片
+@property (nonatomic, strong) UIImageView *imgView;
+
+//时长
+@property (nonatomic, strong) UILabel *timeLabel;
+
+//播放
+@property (nonatomic, strong) UIButton *startButton;
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//类型
+@property (nonatomic, strong) UILabel *typeLabel;
+
+//播放次数
+@property (nonatomic, strong) UIButton *lookCountLabel;
+
+//评论次数
+@property (nonatomic, strong) UIButton *commentCountLabel;
+
+//日期
+@property (nonatomic, strong) UILabel *dateLabel;
+
+//副标题（讲师名，免费）
+@property (nonatomic, strong) UILabel *subtitleLabel;
+
+//底部View
+@property (nonatomic, strong) UIView *boomView;
+
+//分割线
+@property (nonatomic, strong) UIView *sepaView;
+
+@end
+
+@implementation HomePageCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.imgView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.imgView];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.textAlignment = NSTextAlignmentCenter;
+        self.timeLabel.hidden = YES;
+        self.timeLabel.textColor = [UIColor whiteColor];
+        self.timeLabel.font = [UIFont systemFontOfSize:12];
+        self.timeLabel.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7f];
+        self.timeLabel.layer.cornerRadius = 1.5;
+        self.timeLabel.layer.masksToBounds = YES;
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.startButton = [[UIButton alloc] init];
+        [self.startButton setImage:[UIImage imageNamed:@"kecheng_bofang"] forState:UIControlStateNormal];
+        self.startButton.hidden = YES;
+        [self.contentView addSubview:self.startButton];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.numberOfLines = 2;
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.boomView = [[UIView alloc] init];
+        [self.contentView addSubview:self.boomView];
+        
+        self.typeLabel = [[UILabel alloc] init];
+        self.typeLabel.font = [UIFont systemFontOfSize:ys_f20];
+        self.typeLabel.textAlignment = NSTextAlignmentCenter;
+        self.typeLabel.textColor = MainColor;
+        self.typeLabel.layer.cornerRadius = 1.5;
+        self.typeLabel.layer.masksToBounds = YES;
+        self.typeLabel.layer.borderColor = MainColor.CGColor;
+        self.typeLabel.layer.borderWidth = 0.5;
+        [self.boomView addSubview:self.typeLabel];
+        
+        self.lookCountLabel = [[UIButton alloc] init];
+        self.lookCountLabel.titleEdgeInsets = UIEdgeInsetsMake(0, 8, 0, 0);
+        [self.lookCountLabel setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e629", 12, AuxiliaryColor)] forState:UIControlStateNormal];
+        self.lookCountLabel.titleLabel.font = [UIFont systemFontOfSize:12];
+        [self.lookCountLabel setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+        [self.boomView addSubview:self.lookCountLabel];
+        
+        self.commentCountLabel = [[UIButton alloc] init];
+        self.commentCountLabel.titleEdgeInsets = UIEdgeInsetsMake(0, 8, 0, 0);
+        [self.commentCountLabel setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e640", 12, AuxiliaryColor)] forState:UIControlStateNormal];
+        self.commentCountLabel.titleLabel.font = [UIFont systemFontOfSize:12];
+        [self.commentCountLabel setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+        [self.boomView addSubview:self.commentCountLabel];
+        
+        self.dateLabel = [[UILabel alloc] init];
+        self.dateLabel.hidden = YES;
+        self.dateLabel.textColor = AuxiliaryColor;
+        self.dateLabel.font = [UIFont systemFontOfSize:12];
+        [self.boomView addSubview:self.dateLabel];
+        
+        self.subtitleLabel = [[UILabel alloc] init];
+        self.subtitleLabel.textAlignment = NSTextAlignmentRight;
+        self.subtitleLabel.textColor = AuxiliaryColor;
+        self.subtitleLabel.font = [UIFont systemFontOfSize:12];
+        [self.boomView addSubview:self.subtitleLabel];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = SepaViewColor;
+        [self.contentView addSubview:self.sepaView];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    //图片
+    self.imgView.frame = CGRectMake(mainSpacing, 0, 137, 77);
+    self.imgView.centerY = self.contentView.height * 0.5;
+    
+    //播放按钮
+    self.startButton.frame = CGRectMake(0, 0, 22, 22);
+    self.startButton.center = self.imgView.center;
+    
+    //时长
+    self.timeLabel.frame = CGRectMake(0, self.imgView.y + 5, 0, 15);
+    
+    self.timeLabel.width = [NSString returnStringRect:self.model.sDuration size:CGSizeMake(self.imgView.width, CGFLOAT_MAX) font:[UIFont systemFontOfSize:12]].width + mainSpacing;
+    self.timeLabel.x = CGRectGetMaxX(self.imgView.frame) - self.timeLabel.width - 5;
+    
+    //底部View
+    self.boomView.frame = CGRectMake(CGRectGetMaxX(self.imgView.frame) + mainSpacing, CGRectGetMaxY(self.imgView.frame) - 20, self.contentView.width - CGRectGetMaxX(self.imgView.frame) - mainSpacing, 20);
+    
+    //标题
+    CGFloat titleY = self.imgView.y + 5;
+    self.titleLabel.frame = CGRectMake(self.boomView.x, titleY, self.boomView.width, self.boomView.y - titleY);
+    
+    self.sepaView.frame = CGRectMake(self.imgView.x, self.contentView.height - 0.5, self.contentView.width - self.imgView.x, 0.5);
+    
+    [UILabel changeLineSpaceForLabel:self.titleLabel WithSpace:2.5];
+    self.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    
+    NSString *type = [BusinessTypeTool returnBusinessTypeWithCode:self.model.businesscode];
+    self.typeLabel.frame = CGRectMake(0, 0, [NSString returnStringRect:type size:CGSizeMake(self.contentView.width, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f20]].width + mainSpacing, 15);
+    
+    self.lookCountLabel.frame = CGRectMake(CGRectGetMaxX(self.typeLabel.frame) + 5, self.typeLabel.y, 30, self.typeLabel.height);
+
+    self.commentCountLabel.frame = CGRectMake(CGRectGetMaxX(self.lookCountLabel.frame) + 5, self.lookCountLabel.y, 50, self.lookCountLabel.height);
+    
+    CGFloat subTitleW = [NSString returnStringRect:self.model.nickname size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:12]].width + 5;
+    self.subtitleLabel.frame = CGRectMake(self.boomView.width - subTitleW - mainSpacing, self.commentCountLabel.y, subTitleW, self.commentCountLabel.height);
+
+    self.dateLabel.frame = CGRectMake(self.lookCountLabel.x, self.lookCountLabel.y, self.subtitleLabel.x - CGRectGetMaxX(self.typeLabel.frame) - mainSpacing, self.lookCountLabel.height);
+}
+
+- (void)setModel:(HomePageModel *)model
+{
+    _model = model;
+    
+    [self.imgView sd_setImageWithURL:[NSURL URLWithString:model.imgurl] placeholderImage:[UIImage imageNamed:@""]];
+    
+    if ([model.businesscode isEqualToString:courseType]) {
+        self.timeLabel.hidden = NO;
+        self.timeLabel.text = model.sDuration;
+        self.dateLabel.text = @"";
+        self.dateLabel.hidden = YES;
+        self.lookCountLabel.hidden = self.commentCountLabel.hidden = NO;
+        self.startButton.hidden = NO;
+
+    }else
+    {
+        self.startButton.hidden = YES;
+        self.lookCountLabel.hidden = self.commentCountLabel.hidden = YES;
+        self.dateLabel.hidden = NO;
+        self.dateLabel.text = model.indate;
+        self.timeLabel.hidden = YES;
+    }
+    
+    self.titleLabel.text = model.title;
+    
+    NSString *type = [BusinessTypeTool returnBusinessTypeWithCode:model.businesscode];
+    self.typeLabel.text = type;
+    
+    [self.lookCountLabel setTitle:model.learnNum forState:UIControlStateNormal];
+    [self.commentCountLabel setTitle:model.discussNum forState:UIControlStateNormal];
+    self.subtitleLabel.text = model.nickname;
+    
+}
+
+@end

@@ -1,0 +1,641 @@
+//
+//  SpecialDetailController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/10/24.
+//
+//
+
+#import "SpecialDetailController.h"
+#import "UIImageView+WebCache.h"
+#import "SpecialDetailModel.h"
+#import "SpecialDetailButton.h"
+#import "TBCityIconFont.h"
+#import "SpecialDetailTitleModel.h"
+#import "LeftTitleButton.h"
+#import "AFNetWW.h"
+#import "HomePageModel.h"
+#import "MJExtension.h"
+#import "MJChiBaoZiHeader.h"
+#import "MJRefreshAutoNormalFooter.h"
+#import "HomePageCell.h"
+#import "ShalonModel.h"
+#import "SalongCell.h"
+#import "LiveListPastCell.h"
+#import "InformationListCell.h"
+#import "InformationListModel.h"
+#import "QuestionnaireModel.h"
+#import "MyQuestionnaireCell.h"
+#import "MainWebController.h"
+#import "NewCourseDetailController.h"
+
+#define StatusBar_HEIGHT 20
+#define NavigationBar_HEIGHT 44
+
+@interface SpecialDetailController ()<UITableViewDataSource, UITableViewDelegate>
+
+@property(nonatomic,strong)UIView *navigationBackView;
+
+@property (nonatomic, strong) UILabel *titleLabel;
+
+@property (nonatomic, strong) UIView *navBarView;
+
+@property (nonatomic, strong) UIView *typeView;
+
+@property (nonatomic, strong) LeftTitleButton *typeButton;
+
+@property (nonatomic, strong) UIView *headerView;
+
+@property (nonatomic, strong) UIView *titleView;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property(nonatomic, assign) int index;
+
+@property(nonatomic, assign) BOOL isMoreData;
+
+@property (nonatomic, strong) NSMutableArray *datas;
+
+@property (nonatomic, strong) UIButton *selectedButton;
+
+@property (nonatomic, strong) SpecialDetailTitleModel *currentModel;
+
+@property (nonatomic, strong) UILabel *tyepTitle;
+
+@end
+
+@implementation SpecialDetailController
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    [self.navBarView removeFromSuperview];
+    [self.navigationController setNavigationBarHidden:YES animated:YES];
+    
+}
+
+- (UIView *)navBarView {
+    if (!_navBarView) {
+        _navBarView = [[UIView alloc] init];
+        _navBarView.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, 64);
+    }
+    return _navBarView;
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+
+    self.index = 0;
+
+    self.datas = [NSMutableArray array];
+
+    if ([self respondsToSelector:@selector(setAutomaticallyAdjustsScrollViewInsets:)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+    }
+    
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 0)];
+    headerView.backgroundColor = ViewBackColor;
+    
+    //背景图
+    UIImageView *backImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 210)];
+    [backImage sd_setImageWithURL:[NSURL URLWithString:self.detailModel.image] placeholderImage:[UIImage imageNamed:@"zwt_kecheng"]];
+    [headerView addSubview:backImage];
+    
+    NSArray *titles = @[@"排行榜",@"证书"];
+    NSArray *images = @[@"paihangbang",@"zhengshu"];
+    
+    UIView *describeView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 0)];
+    describeView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:describeView];
+    
+    CGFloat buttonW = (self.view.width - mainSpacing - mainSpacing15 * 2) * 0.5;
+    for (int i = 0; i < 2; i++) {
+        SpecialDetailButton *button = [[SpecialDetailButton alloc] init];
+        button.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+        [button setTitleColor:MainColor forState:UIControlStateNormal];
+        button.layer.cornerRadius = 5;
+        button.layer.masksToBounds = YES;
+        button.backgroundColor = [UIColor whiteColor];
+        button.width = buttonW;
+        button.height = 95;
+        button.y = CGRectGetMaxY(backImage.frame) + mainSpacing15;
+        button.x = i * (buttonW + mainSpacing) + mainSpacing15;
+        [button setTitle:titles[i] forState:UIControlStateNormal];
+        [button setImage:[UIImage imageNamed:images[i]] forState:UIControlStateNormal];
+        [headerView addSubview:button];
+        
+        if (i == 1) {
+            describeView.y = CGRectGetMaxY(button.frame) + mainSpacing;
+            [button setTitleColor:Certificate forState:UIControlStateNormal];
+        }else
+        {
+            [button setTitleColor:RankingColor forState:UIControlStateNormal];
+        }
+    }
+    
+    //标题
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing15, mainSpacing15, describeView.width - mainSpacing15 * 2 - 45, 20)];
+    titleLabel.textColor = MainTextColor;
+    titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    titleLabel.text = self.detailModel.title;
+    [describeView addSubview:titleLabel];
+    
+    UIButton *collectionButton = [[UIButton alloc] initWithFrame:CGRectMake(describeView.width - 45 - mainSpacing15, 0, 45, 18)];
+    [collectionButton addTarget:self action:@selector(collectionButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+    collectionButton.layer.borderColor = MainColor.CGColor;
+    collectionButton.layer.borderWidth = 0.5;
+    collectionButton.layer.cornerRadius = 1.5;
+    collectionButton.layer.masksToBounds = YES;
+    collectionButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+    collectionButton.centerY = titleLabel.centerY;
+    [collectionButton setTitle:@"收藏" forState:UIControlStateNormal];
+    [collectionButton setTitle:@"已收藏" forState:UIControlStateSelected];
+    [collectionButton setTitleColor:MainColor forState:UIControlStateNormal];
+    [collectionButton setTitleColor:AuxiliaryColor forState:UIControlStateSelected];
+    [describeView addSubview:collectionButton];
+    if (self.detailModel.isfavorited == 0) {
+        collectionButton.selected = NO;
+        collectionButton.layer.borderColor = MainColor.CGColor;
+    }else
+    {
+        collectionButton.selected = YES;
+        collectionButton.layer.borderColor = AuxiliaryColor.CGColor;
+    }
+
+    //描述
+    UILabel *describeLabel = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing15, CGRectGetMaxY(titleLabel.frame) + mainSpacing, describeView.width - 2 * mainSpacing15, 60)];
+    describeLabel.numberOfLines = 3;
+    describeLabel.font = [UIFont systemFontOfSize:ys_28];
+    describeLabel.textColor = AuxiliaryColor;
+    describeLabel.text = self.detailModel.desc;
+    [describeView addSubview:describeLabel];
+    
+    //学习人数
+    UILabel *studyLabel = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing15, CGRectGetMaxY(describeLabel.frame) + 5, describeLabel.width, 20)];
+    studyLabel.text = [NSString stringWithFormat:@"%@人学习",self.detailModel.learnNum];
+    studyLabel.font = [UIFont systemFontOfSize:ys_28];
+    studyLabel.textColor = AuxiliaryColor;
+    [describeView addSubview:studyLabel];
+    
+    describeView.height = CGRectGetMaxY(studyLabel.frame) + mainSpacing;
+    
+    //分割
+    UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(describeView.frame), describeView.width, mainSpacing)];
+    sepaView.backgroundColor = ViewBackColor;
+    [headerView addSubview:sepaView];
+
+    //标题View
+    UIView *titleView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(sepaView.frame), describeView.width, 45)];
+    self.titleView = titleView;
+    titleView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:titleView];
+    
+    //分割线
+    UIView *sepaView2 = [[UIView alloc] initWithFrame:CGRectMake(mainSpacing15, titleView.height - 0.5, titleView.width - mainSpacing15, 0.5)];
+    sepaView2.backgroundColor = SepaViewColor;
+    [titleView addSubview:sepaView2];
+    
+    //标题label
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing15, 0, titleView.width - mainSpacing15 * 2 - 45, titleView.height)];
+    self.tyepTitle = title;
+    SpecialDetailTitleModel *model = [self.titles firstObject];
+    title.textColor = AuxiliaryColor;
+    title.font = [UIFont systemFontOfSize:ys_28];
+    title.text = [NSString stringWithFormat:@"共%d项内容",model.num];
+    [titleView addSubview:title];
+
+    //分类按钮
+    LeftTitleButton *typeButton = [[LeftTitleButton alloc] initWithFrame:CGRectMake(titleView.width - 53 - mainSpacing15, 0, 53, titleView.height)];
+    self.typeButton = typeButton;
+    [typeButton addTarget:self action:@selector(typeButtonClick) forControlEvents:UIControlEventTouchUpInside];
+    typeButton.centerY = title.centerY;
+    typeButton.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+    [typeButton setTitle:model.businessname forState:UIControlStateNormal];
+    [typeButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e64f", ys_28, MainColor)] forState:UIControlStateNormal];
+    [typeButton setTitleColor:MainColor forState:UIControlStateNormal];
+    [titleView addSubview:typeButton];
+    
+    //分类View
+    UIView *typeView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(titleView.frame), describeView.width, 45)];
+    typeView.backgroundColor = [UIColor whiteColor];
+    self.typeView = typeView;
+    typeView.hidden = YES;
+    [headerView addSubview:typeView];
+    
+    if (self.titles.count > 0) {
+        CGFloat buttonW = 30;
+        
+        for (int i = 0; i < self.titles.count; i ++) {
+            UIButton *button = [[UIButton alloc] init];
+            button.tag = i;
+            [button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+            SpecialDetailTitleModel *model = self.titles[i];
+            [button setTitle:model.businessname forState:UIControlStateNormal];
+            [button setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+            [button setTitleColor:MainColor forState:UIControlStateSelected];
+            button.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+            button.width = buttonW;
+            button.height = typeView.height;
+            button.x = mainSpacing15 + i * (buttonW + 25);
+            button.y = 0;
+            [typeView addSubview:button];
+            
+            if (i == 0) {
+                button.selected = YES;
+                self.selectedButton = button;
+            }
+        }
+    }
+    
+    //分割线
+    UIView *sepaView3 = [[UIView alloc] initWithFrame:CGRectMake(0, typeView.height - 0.5, titleView.width, 0.5)];
+    sepaView3.backgroundColor = SepaViewColor;
+    [typeView addSubview:sepaView3];
+    
+    headerView.height = CGRectGetMaxY(titleView.frame);
+    self.headerView = headerView;
+    
+    //章节
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    self.tableView = tableView;
+    tableView.tableHeaderView = headerView;
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    
+    __weak __typeof(self) weakSelf = self;
+    
+    //上拉加载更多 设置回调（一旦进入刷新状态就会调用这个refreshingBlock）
+    tableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+        weakSelf.isMoreData = YES;
+        ++weakSelf.index;
+        [weakSelf setUpData];
+    }];
+    
+    // 初始化导航栏
+    [self setupNavigationBar];
+
+    self.currentModel = [self.titles firstObject];
+    
+    //获取数据
+    [self setUpData];
+}
+
+#pragma mark 获取数据
+- (void) setUpData
+{
+
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,ClassesCourse,[UserInfoTool getUserInfo].token];
+    
+    NSDictionary *dic=@{
+                        @"classesid" : [NSString stringWithFormat:@"%d",self.detailModel.businessid],
+                        @"index" : [NSString stringWithFormat:@"%d",self.index],
+                        @"count" : @"10",
+                        @"businesscode" : [NSString stringWithFormat:@"%d",self.currentModel.businesscode]
+                        };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        int rescode = [responseDic[@"rescode"] intValue];
+        if (rescode == 10000) {
+            
+            NSArray *models = [HomePageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            
+            if (models.count > 0) {
+                if (self.isMoreData) {
+                    [self.datas addObjectsFromArray:models];
+                    
+                }else
+                {
+                    self.datas = (NSMutableArray *)models;
+                }
+            }
+            
+            [self.tableView reloadData];
+            
+            [self.tableView.mj_footer endRefreshing];
+        }
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:@"发送请求失败"];
+    }];
+}
+
+#pragma mark -初始化导航栏
+- (void)setupNavigationBar {
+    
+    // 导航栏背景view
+    _navigationBackView = [[UIView alloc] init];
+    _navigationBackView.frame = CGRectMake(0, 0, SCREEN_WIDTH, StatusBar_HEIGHT + NavigationBar_HEIGHT);
+    [self.view addSubview:_navigationBackView];
+    
+    //标题
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:_navigationBackView.bounds];
+    titleLabel.alpha = 0;
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    self.titleLabel = titleLabel;
+    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    titleLabel.width = _navigationBackView.width * 0.6;
+    titleLabel.centerX = _navigationBackView.width * 0.5;
+    titleLabel.centerY = (_navigationBackView.height + 20) * 0.5;
+    titleLabel.text = @"专题详情";
+    [_navigationBackView addSubview:titleLabel];
+    
+    //返回按钮
+    UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [rightButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e807", 18, [UIColor whiteColor])] forState:UIControlStateNormal];
+    rightButton.size = CGSizeMake(25, 25);
+    [rightButton addTarget:self action:@selector(back) forControlEvents:UIControlEventTouchUpInside];
+    rightButton.centerY = titleLabel.centerY;
+    rightButton.x = 15;
+    [_navigationBackView addSubview:rightButton];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.datas.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (self.currentModel.businesscode == [courseType intValue]) { //课程
+        static NSString *ID = @"HomePageCell";
+        HomePageCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[HomePageCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.isCourse = YES;
+        HomePageModel *model = self.datas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }else if(self.currentModel.businesscode == [shalongType intValue]) //沙龙
+    {
+        static NSString *ID = @"SalongCell";
+        SalongCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[SalongCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.type = 1;
+        ShalonModel *model = self.datas[indexPath.row];
+        cell.model = model;
+        
+        return cell;
+    }else if(self.currentModel.businesscode == [liveType intValue]) //沙龙
+    {
+        static NSString *ID = @"LiveListPastCell";
+        LiveListPastCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[LiveListPastCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        
+        HomePageModel *model = self.datas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }else if(self.currentModel.businesscode == [newsType intValue]) //资讯
+    {
+        static NSString *ID = @"InformationListCell";
+        InformationListCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[InformationListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        
+        InformationListModel *model = self.datas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }else if(self.currentModel.businesscode == [voteType intValue]) //问卷
+    {
+        static NSString *ID = @"MyQuestionnaireCell";
+        MyQuestionnaireCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[MyQuestionnaireCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        QuestionnaireModel *model = self.datas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }
+    
+    static NSString *ID = @"cell";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    return cell;
+    
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (self.currentModel.businesscode == [courseType intValue]) { //课程
+        return 107;
+    }else if(self.currentModel.businesscode == [shalongType intValue]) //沙龙
+    {
+        return 106;
+    }else if(self.currentModel.businesscode == [liveType intValue]) //直播
+    {
+        return 106;
+    }else if(self.currentModel.businesscode == [newsType intValue]) //资讯
+    {
+        return 93;
+    }else if(self.currentModel.businesscode == [voteType intValue]) //资讯
+    {
+        return 70;
+    }
+    return 44;
+}
+
+#pragma mark 返回
+- (void) back
+{
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
+#pragma mark -UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    
+    CGFloat offset_Y = scrollView.contentOffset.y;
+    CGFloat alpha = (offset_Y)/300.0f;
+    
+    self.navigationBackView.backgroundColor = [MainColor colorWithAlphaComponent:alpha];
+    self.titleLabel.alpha = alpha;
+}
+
+- (void) typeButtonClick
+{
+
+    self.typeView.hidden = !self.typeView.hidden;
+    
+    if (self.typeView.hidden) {
+        [self.typeButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e64f", ys_28, MainColor)] forState:UIControlStateNormal];
+        
+        self.headerView.height = CGRectGetMaxY(self.titleView.frame);
+
+    }else
+    {
+        [self.typeButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e650", ys_28, MainColor)] forState:UIControlStateNormal];
+        
+        self.headerView.height = CGRectGetMaxY(self.typeView.frame);
+    }
+    
+    self.tableView.tableHeaderView = self.headerView;
+    
+}
+
+- (void) buttonClick : (UIButton *) button
+{
+    button.selected = YES;
+    self.selectedButton.selected = NO;
+    self.selectedButton = button;
+    
+    self.index = 0;
+    self.datas = [NSMutableArray array];
+    
+    SpecialDetailTitleModel *model = self.titles[button.tag];
+    self.currentModel = model;
+    self.tyepTitle.text = [NSString stringWithFormat:@"共%d项内容",model.num];
+    [self.typeButton setTitle:model.businessname forState:UIControlStateNormal];
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,ClassesCourse,[UserInfoTool getUserInfo].token];
+    
+    NSDictionary *dic=@{
+                        @"classesid" : [NSString stringWithFormat:@"%d",self.detailModel.businessid],
+                        @"index" : [NSString stringWithFormat:@"%d",self.index],
+                        @"count" : @"10",
+                        @"businesscode" : [NSString stringWithFormat:@"%d",model.businesscode]
+                        };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        int rescode = [responseDic[@"rescode"] intValue];
+        if (rescode == 10000) {
+            
+            NSArray *models = [NSArray array];
+            
+            //沙龙
+            if (model.businesscode == [shalongType intValue]) {
+                models = [ShalonModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+
+            }else if (model.businesscode == [courseType intValue]) //课程
+            {
+                 models = [HomePageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            }else if (model.businesscode == [liveType intValue]) //直播
+            {
+                models = [HomePageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+
+            }else if (model.businesscode == [newsType intValue]) //资讯
+            {
+                models = [InformationListModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            }else if (model.businesscode == [voteType intValue]) //问卷
+            {
+                models = [QuestionnaireModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            }
+            
+            if (models.count > 0) {
+                if (self.isMoreData) {
+                    [self.datas addObjectsFromArray:models];
+                    
+                }else
+                {
+                    self.datas = (NSMutableArray *)models;
+                }
+            }
+            
+            [self.tableView reloadData];
+            
+            [self.tableView.mj_footer endRefreshing];
+        }
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:@"发送请求失败"];
+    }];
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];//选中后的反显颜色即刻消失
+
+    //沙龙
+    if (self.currentModel.businesscode == [shalongType intValue]) {
+        
+        ShalonModel *model = self.datas[indexPath.row];
+        
+        MainWebController *shalong = [[MainWebController alloc] init];
+        NSString *url = [NSString stringWithFormat:@"%@%@?id=%@&locale=%@",NetHeader,Shalongdetail,model.ID,[ManyLanguageMag getTypeWithWebDiscript]];
+        shalong.url = url;
+        shalong.webTitle = model.title;
+        [self.navigationController pushViewController:shalong animated:YES];
+        
+    }else if (self.currentModel.businesscode == [courseType intValue]) //课程
+    {
+        HomePageModel *model = self.datas[indexPath.row];
+        NewCourseDetailController *newCourseVc = [[NewCourseDetailController alloc] init];
+        newCourseVc.courseid = model.businessid;
+        [self.navigationController pushViewController:newCourseVc animated:YES];
+    }else if (self.currentModel.businesscode == [liveType intValue]) //直播
+    {
+
+        HomePageModel *model = self.datas[indexPath.row];
+        
+        NSString *uelStr = [NSString stringWithFormat:@"%@%@?liveid=%@&appkey=%@&locale=%@",NetHeader,Liveplay,model.businessid,appkey,[ManyLanguageMag getTypeWithWebDiscript]];
+        
+        MainWebController *vc = [[MainWebController alloc] init];
+        vc.url = uelStr;
+        vc.webTitle = model.title;
+        [self.navigationController pushViewController:vc animated:YES];
+    }else if (self.currentModel.businesscode == [newsType intValue]) //资讯
+    {
+        InformationListModel *model = self.datas[indexPath.row];
+        MainWebController *webVc = [[MainWebController alloc] init];
+        webVc.webTitle = @"资讯详情";
+        webVc.url = [NSString stringWithFormat:@"%@%@?id=%@",NetHeader,NewsDetail,model.ID];
+        [self.navigationController pushViewController:webVc animated:YES];
+    }else if (self.currentModel.businesscode == [voteType intValue]) //问卷
+    {
+        QuestionnaireModel *model = self.datas[indexPath.row];
+
+        NSString *uelStr = [NSString stringWithFormat:@"%@/mh5/vote/votetags?id=%@&token=%@",NetHeader,model.ID,[UserInfoTool getUserInfo].token];
+        
+        MainWebController *vc = [[MainWebController alloc] init];
+        vc.url = uelStr;
+        vc.webTitle = model.votetitle;
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+
+}
+
+- (void) collectionButtonClick : (UIButton *) button
+{
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,FavoriteAdd,[UserInfoTool getUserInfo].token];
+    
+    NSDictionary *dic=@{
+                        @"businessid" : [NSString stringWithFormat:@"%d",self.detailModel.businessid],
+                        @"businesscode" : specialType
+                        };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        int rescode = [responseDic[@"rescode"] intValue];
+        if (rescode == 10000) {
+            
+            [MBProgressHUD showSuccess:responseDic[@"data"][@"msg"]];
+            
+            button.selected = YES;
+            button.layer.borderColor = AuxiliaryColor.CGColor;
+        }
+    } fail:^(NSError *error) {
+        
+    }];
+}
+
+@end

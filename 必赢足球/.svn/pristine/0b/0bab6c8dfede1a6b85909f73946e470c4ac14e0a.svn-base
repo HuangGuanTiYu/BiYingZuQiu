@@ -1,0 +1,124 @@
+//
+//  NewH5CourseController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/12/23.
+//
+//
+
+#import "NewH5CourseController.h"
+#import "H5CourseController.h"
+#import "MainWebController.h"
+#import "VideoCourseController.h"
+#import "UploadListController.h"
+
+@interface NewH5CourseController ()
+
+@end
+
+@implementation NewH5CourseController
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"我的课件";
+    
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 70)];
+    headerView.backgroundColor = ViewBackColor;
+    [self.view addSubview:headerView];
+    
+    UIButton *createView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, headerView.width - 2 * mainSpacing, headerView.height - mainSpacing * 2)];
+    [createView addTarget:self action:@selector(createViewClick) forControlEvents:UIControlEventTouchUpInside];
+    createView.centerX = headerView.width * 0.5;
+    createView.centerY = headerView.height * 0.5;
+    createView.backgroundColor = [UIColor whiteColor];
+    [createView setTitle:@"创建课件" forState:UIControlStateNormal];
+    [createView setTitleColor:GreenColor forState:UIControlStateNormal];
+    createView.layer.cornerRadius = 5;
+    createView.layer.masksToBounds = YES;
+    createView.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    createView.layer.borderColor = GreenColor.CGColor;
+    createView.layer.borderWidth = 0.5;
+    [headerView addSubview:createView];
+    
+    //设置buttonBarView属性 选中文字变大 文字颜色
+    [self setButtonBarView];
+    
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"上传列表" style:UIBarButtonItemStylePlain target:self action:@selector(jumpToUploadList)];
+}
+
+- (void) jumpToUploadList
+{
+    
+    UploadListController *vc = [[UploadListController alloc] init];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
+- (void) setButtonBarView
+{
+    self.isProgressiveIndicator = YES;
+    
+    self.changeCurrentIndexProgressiveBlock = ^void(XLButtonBarViewCell *oldCell, XLButtonBarViewCell *newCell, CGFloat progressPercentage, BOOL changeCurrentIndex, BOOL animated){
+        if (changeCurrentIndex) {
+            [oldCell.label setTextColor:[UIColor grayColor]];
+            [newCell.label setTextColor:GreenColor];
+            
+            if (animated) {
+                [UIView animateWithDuration:0.1
+                                 animations:^(){
+                                     oldCell.label.font = [UIFont systemFontOfSize:14];
+                                     newCell.label.font = [UIFont systemFontOfSize:14];
+                                     
+                                 }
+                                 completion:nil];
+            }
+            else{
+                oldCell.label.font = [UIFont systemFontOfSize:14];
+                newCell.label.font = [UIFont systemFontOfSize:14];
+            }
+        }
+    };
+}
+
+-(NSArray *)childViewControllersForPagerTabStripViewController:(XLPagerTabStripViewController *)pagerTabStripViewController
+{
+    self.buttonBarView.y = 70;
+    self.buttonBarView.backgroundColor = [UIColor whiteColor];
+    
+    self.buttonBarView.shouldCellsFillAvailableWidth = YES;
+    
+    NSMutableArray *childVcArray = [NSMutableArray array];
+    
+    VideoCourseController *video = [[VideoCourseController alloc] init];
+    video.pageTitle = @"音频课件";
+    [childVcArray addObject:video];
+    
+    H5CourseController *study = [[H5CourseController alloc] init];
+    study.pageTitle = @"H5课件";
+    [childVcArray addObject:study];
+    
+    return childVcArray;
+}
+
+#pragma mark 创建课件
+- (void) createViewClick
+{
+    MainWebController *webVc = [[MainWebController alloc] init];
+    webVc.isFromH5Course = YES;
+    webVc.webTitle = @"创建课件";
+    NSString *header = [MainUserDefaults objectForKey:FileServerUrl];
+    webVc.url = [NSString stringWithFormat:@"%@/%@",header,CreateH5Course];
+    [self.navigationController pushViewController:webVc animated:YES];
+}
+
+@end

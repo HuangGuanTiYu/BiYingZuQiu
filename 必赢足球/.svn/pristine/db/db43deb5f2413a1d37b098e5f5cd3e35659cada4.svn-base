@@ -1,0 +1,156 @@
+//
+//  LiveListPastCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/23.
+//
+//
+
+#import "LiveListPastCell.h"
+#import "UILabel+Extension.h"
+#import "HomePageModel.h"
+#import "NSString+Extension.h"
+#import "UIImageView+WebCache.h"
+
+@interface LiveListPastCell()
+
+//图片
+@property (nonatomic, strong) UIImageView *imgView;
+
+//时长
+@property (nonatomic, strong) UILabel *timeLabel;
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//日期
+@property (nonatomic, strong) UILabel *dateLabel;
+
+//副标题（讲师名，免费）
+@property (nonatomic, strong) UILabel *subtitleLabel;
+
+//底部View
+@property (nonatomic, strong) UIView *boomView;
+
+//直播按钮
+@property (nonatomic, strong) UIButton *liveButton;
+
+@end
+
+@implementation LiveListPastCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.imgView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.imgView];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.textAlignment = NSTextAlignmentCenter;
+        self.timeLabel.textColor = [UIColor whiteColor];
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeLabel.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7f];
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.numberOfLines = 2;
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.boomView = [[UIView alloc] init];
+        [self.contentView addSubview:self.boomView];
+        
+        self.dateLabel = [[UILabel alloc] init];
+        self.dateLabel.textColor = AuxiliaryColor;
+        self.dateLabel.font = [UIFont systemFontOfSize:12];
+        [self.boomView addSubview:self.dateLabel];
+        
+        self.subtitleLabel = [[UILabel alloc] init];
+        self.subtitleLabel.textAlignment = NSTextAlignmentRight;
+        self.subtitleLabel.textColor = AuxiliaryColor;
+        self.subtitleLabel.font = [UIFont systemFontOfSize:12];
+        [self.boomView addSubview:self.subtitleLabel];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = SepaViewColor;
+        [self.contentView addSubview:self.sepaView];
+        
+        self.liveButton = [[UIButton alloc] init];
+        [self.liveButton setImage:[UIImage imageNamed:@"liveButton"] forState:UIControlStateNormal];
+        [self.contentView addSubview:self.liveButton];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    //图片
+    self.imgView.frame = CGRectMake(mainSpacing15, 0, 137, 77);
+    self.imgView.centerY = self.contentView.height * 0.5;
+    
+    //时长
+    self.timeLabel.frame = CGRectMake(self.imgView.x, CGRectGetMaxY(self.imgView.frame) - 15, self.imgView.width, 18);
+    
+    //底部View
+    self.boomView.frame = CGRectMake(CGRectGetMaxX(self.imgView.frame) + mainSpacing, CGRectGetMaxY(self.imgView.frame) - 20, self.contentView.width - CGRectGetMaxX(self.imgView.frame) - mainSpacing15, 20);
+    
+    //标题
+    CGFloat titleY = self.imgView.y + 5;
+    self.titleLabel.frame = CGRectMake(self.boomView.x, titleY, self.boomView.width, self.boomView.y - titleY);
+    
+    [UILabel changeLineSpaceForLabel:self.titleLabel WithSpace:2.5];
+    self.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    
+    self.dateLabel.x = 0;
+    
+    CGFloat subTitleW = [NSString returnStringRect:self.model.nickname size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:12]].width + 5;
+    self.subtitleLabel.frame = CGRectMake(self.boomView.width - subTitleW - mainSpacing, 0, subTitleW, 15);
+    
+    self.dateLabel.frame = CGRectMake(0, 0, self.subtitleLabel.x - mainSpacing, 15);
+    
+    self.sepaView.frame = CGRectMake(mainSpacing15, self.contentView.height - 0.5, self.contentView.width - mainSpacing15, 0.5);
+    
+    self.liveButton.frame = CGRectMake(0, 0, 40, 40);
+    self.liveButton.centerY = self.contentView.height * 0.5;
+    self.liveButton.x = self.contentView.width - mainSpacing15 - 40;
+}
+
+- (void)setModel:(HomePageModel *)model
+{
+    _model = model;
+    
+    [self.imgView sd_setImageWithURL:[NSURL URLWithString:model.image] placeholderImage:[UIImage imageNamed:@"zwt_kecheng"]];
+
+    self.titleLabel.text = model.title;
+    self.dateLabel.text = model.indate;
+    self.subtitleLabel.text = model.nickname;
+    self.timeLabel.text = [NSString stringWithFormat:@"%@人参加",model.learnNum];
+    
+    if (self.isFromStudy && [self.teacherid isEqualToString:[UserInfoTool getUserInfo].zttid] && [model.living isEqualToString:@"1"]) {
+        self.liveButton.hidden = NO;
+    }else
+    {
+        self.liveButton.hidden = YES;
+    }
+}
+
+- (void)setIsFromStudyDetail:(BOOL)isFromStudyDetail
+{
+    _isFromStudyDetail = isFromStudyDetail;
+    
+    self.subtitleLabel.hidden = isFromStudyDetail;
+}
+
+- (void)setIsFromStudy:(BOOL)isFromStudy
+{
+    _isFromStudy = isFromStudy;
+    
+}
+
+@end

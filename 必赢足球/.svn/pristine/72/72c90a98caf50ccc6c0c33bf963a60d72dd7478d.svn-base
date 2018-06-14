@@ -1,0 +1,165 @@
+//
+//  MessageInteractionController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/7/26.
+//
+//
+
+#import "MessageInteractionController.h"
+#import "AFNetWW.h"
+#import "MessageModel.h"
+#import "MJExtension.h"
+#import "MessageInteractionCell.h"
+#import "MJRefresh.h"
+
+@interface MessageInteractionController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) NSMutableArray *messageModels;
+
+@property (nonatomic, assign) BOOL isMoreData;
+
+@property (nonatomic, assign) int index;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, assign) BOOL hasRole;
+
+@end
+
+@implementation MessageInteractionController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.messageModels = [NSMutableArray array];
+    
+    [self setUpData];
+}
+
+- (void) setUpData
+{
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@",NetHeader,GetMsgRecord];
+    NSDictionary *Parameters=@{
+                               @"token":[UserInfoTool getUserInfo].token,
+                               @"msgtype"  : @"3",
+                               @"index":[NSString stringWithFormat:@"%d",self.index],
+                               @"count":@"10"
+                               };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:Parameters success:^(id responseDic) {
+        
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+        
+        if ([self.delegate respondsToSelector:@selector(setRedInteractionPoint:)]) {
+            [self.delegate setRedInteractionPoint:[responseDic[@"data"][@"count"] intValue]];
+        }
+        
+        NSArray *models = [MessageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+        if (models.count > 0) {
+            if (self.isMoreData) {
+                [self.messageModels addObjectsFromArray:models];
+            }else
+            {
+                self.messageModels = (NSMutableArray *)models;
+            }
+            
+            [self.tableView reloadData];
+        }else if(self.isMoreData)
+        {
+            --self.index;
+            [MBProgressHUD showError:@"已加载全部信息"];
+            [self.tableView.mj_header endRefreshing];
+            [self.tableView.mj_footer endRefreshing];
+            return ;
+        }
+        
+        
+    } fail:^(NSError *error) {
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+        
+        [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+    }];
+}
+
+- (NSString *)titleForPagerTabStripViewController:(XLPagerTabStripViewController *)pagerTabStripViewController
+{
+    return @"互动";
+}
+
+- (void) setUpUI
+{
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    self.tableView = tableView;
+    tableView.y = self.hasRole ? 70 : 0;
+    tableView.height = self.view.height - 70;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    
+    tableView.tableFooterView = [[UIView alloc] init];
+    
+    __weak __typeof(self) weakSelf = self;
+    
+    //下拉刷新
+    tableView.mj_header = [MJRefreshNormalHeader headerWithRefreshingBlock:^{
+        weakSelf.isMoreData = NO;
+        weakSelf.index = 0;
+        [weakSelf setUpData];
+    }];
+    
+    
+    //上拉加载更多 设置回调（一旦进入刷新状态就会调用这个refreshingBlock）
+    tableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+        weakSelf.isMoreData = YES;
+        ++weakSelf.index;
+        [weakSelf setUpData];
+    }];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.messageModels.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    static NSString *ID = @"cell";
+    MessageInteractionCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[MessageInteractionCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    MessageModel *model = self.messageModels[indexPath.row];
+    cell.model = model;
+    return cell;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    MessageModel *model = self.messageModels[indexPath.row];
+    return model.interactionCellHeight + 50;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)setTableViewHeight: (BOOL) hasRole
+{
+    self.hasRole = hasRole;
+    
+    [self setUpUI];
+
+}
+
+@end

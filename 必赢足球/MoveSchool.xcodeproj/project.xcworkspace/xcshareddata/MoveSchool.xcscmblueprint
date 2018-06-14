@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "3a02899a-4f47-e74d-a64d-eebaafa22003++505",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "3a02899a-4f47-e74d-a64d-eebaafa22003++505" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "3a02899a-4f47-e74d-a64d-eebaafa22003++505" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "DBF3E7B6-4EF9-4BC1-9ECF-E39E8088F41C",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "3a02899a-4f47-e74d-a64d-eebaafa22003++505" : "trunk\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "MoveSchool",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "MoveSchool\/MoveSchool.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/123.56.89.122:8443\/svn\/ios_ydxt4.0_rebuild",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "3a02899a-4f47-e74d-a64d-eebaafa22003++505"
+    }
+  ]
+}

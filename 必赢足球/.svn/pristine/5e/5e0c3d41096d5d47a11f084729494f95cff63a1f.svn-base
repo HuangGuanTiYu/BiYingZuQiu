@@ -1,0 +1,77 @@
+//
+//  MyFansCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/17.
+//
+//
+
+#import "MyFansCell.h"
+#import "TeacherListModel.h"
+#import "UIImageView+WebCache.h"
+
+@interface MyFansCell()
+
+//头像
+@property (nonatomic, strong) UIImageView *headerView;
+
+//标题
+@property (nonatomic,strong) UILabel *titleLabel;
+
+//时长
+@property (nonatomic,strong) UILabel *timeLabel;
+
+@end
+
+@implementation MyFansCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.headerView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:14];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeLabel.textColor = AuxiliaryColor;
+        [self.contentView addSubview:self.timeLabel];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.headerView.frame = CGRectMake(15, 0, 35, 35);
+    self.headerView.centerY = self.contentView.height * 0.5;
+    self.headerView.layer.cornerRadius = 17.5;
+    self.headerView.layer.masksToBounds = YES;
+    
+    self.timeLabel.frame = CGRectMake(0, 0, 100, 11);
+    self.timeLabel.centerY = self.contentView.height * 0.5;
+    [self.timeLabel sizeToFit];
+    self.timeLabel.x = self.contentView.width - 15 - self.timeLabel.width;
+    
+    self.titleLabel.frame = CGRectMake(60, 0, self.timeLabel.x - 70, 20);
+    self.titleLabel.centerY = self.timeLabel.centerY;
+}
+
+- (void)setModel:(TeacherListModel *)model
+{
+    _model = model;
+    
+    self.titleLabel.text = model.nickname;
+    self.timeLabel.text = model.indate;
+    [self.headerView sd_setImageWithURL:[NSURL URLWithString:model.teacherpic] placeholderImage:[UIImage imageNamed:@"zwt_jiangshi_touxiang"]];
+}
+
+@end

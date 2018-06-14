@@ -1,0 +1,106 @@
+//
+//  VideoCell.m
+//  MoveSchool
+//
+//  Created by edz on 2018/1/6.
+//
+
+#import "VideoCell.h"
+#import "VideoModel.h"
+
+@interface VideoCell()
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//时间
+@property (nonatomic, strong) UILabel *timeLabel;
+
+//状态
+@property (nonatomic, strong) UIButton *stateButton;
+
+//编辑
+@property (nonatomic, strong) UIButton *editButton;
+
+//编辑按钮放大按钮
+@property (nonatomic, strong) UIButton *editBigButton;
+
+//发布和编辑按钮分割线
+@property (nonatomic, strong) UIView *sepaView;
+
+//课件ID
+@property (nonatomic, copy) NSString *ccid;
+
+@end
+
+@implementation VideoCell
+
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        
+        self.headerView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        self.titleLabel.numberOfLines = 2;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeLabel.textColor = RGBColor(143,143,143);
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.stateButton = [[UIButton alloc] init];
+        [self.contentView addSubview:self.stateButton];
+        
+        self.editButton = [[UIButton alloc] init];
+        [self.contentView addSubview:self.editButton];
+        
+        self.editBigButton = [[UIButton alloc] init];
+        [self.editBigButton addTarget:self action:@selector(editClick) forControlEvents:UIControlEventTouchUpInside];
+        [self.contentView addSubview:self.editBigButton];
+        
+        self.editButton.titleLabel.font = self.stateButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = DivisionColor;
+        [self.contentView addSubview:self.sepaView];
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    CGFloat headerViewH = self.height - mainSpacing * 4;
+    self.headerView.frame = CGRectMake(mainSpacing, 0, headerViewH / 9 * 16, headerViewH);
+    self.headerView.centerY = self.height * 0.5;
+    
+    self.titleLabel.frame = CGRectMake(CGRectGetMaxX(self.headerView.frame) + mainSpacing, self.headerView.y, self.width - 2 * mainSpacing - CGRectGetMaxX(self.headerView.frame), self.headerView.height * 0.5);
+    [self.titleLabel sizeToFit];
+    
+    self.timeLabel.frame = CGRectMake(self.titleLabel.x, CGRectGetMaxY(self.headerView.frame) - 20, 50, 20);
+    [self.timeLabel sizeToFit];
+    
+    self.editButton.frame = CGRectMake(self.width - 30 - mainSpacing, self.timeLabel.y - 3, 30, 20);
+    
+    self.editBigButton.frame = CGRectMake(self.width - 40 - mainSpacing, self.timeLabel.y - 10, 50, 40);
+    
+    self.sepaView.frame = CGRectMake(self.editButton.x - mainSpacing, self.editButton.y + 5, 1, 10);
+    
+    self.stateButton.frame = CGRectMake(self.sepaView.x - mainSpacing - 46, self.editButton.y, 50, 20);
+    [self.stateButton.titleLabel sizeToFit];
+}
+
+- (void)setModel:(VideoModel *)model
+{
+    
+    _model = model;
+    
+    self.headerView.image = model.bjImage;
+}
+
+@end

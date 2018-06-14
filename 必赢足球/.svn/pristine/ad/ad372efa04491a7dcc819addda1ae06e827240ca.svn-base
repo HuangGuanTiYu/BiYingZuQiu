@@ -1,0 +1,12 @@
+//
+//  VideoCoverController.h
+//  MoveSchool
+//
+//  Created by edz on 2018/1/3.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface VideoCoverController : UIViewController
+
+@end

@@ -1,0 +1,97 @@
+//
+//  DownLoadCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/22.
+//
+//
+
+#import "DownLoadCell.h"
+#import "UIImageView+CornerRadius.h"
+#import "TBCityIconFont.h"
+#import "ChapterModel.h"
+
+@interface DownLoadCell()
+
+@property (nonatomic, strong) UILabel *titleLabel; //标题
+
+@end
+
+@implementation DownLoadCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    
+    if (self) {
+        
+        self.selectButton = [[UIButton alloc] init];
+        [self.selectButton addTarget:self action:@selector(selectButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        [self.contentView addSubview:self.selectButton];
+        [self.selectButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e625", ys_28, AuxiliaryColor)] forState:UIControlStateNormal];
+        [self.selectButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e624", ys_28, GreenColor)] forState:UIControlStateSelected];
+        
+        self.chapter = [[UIButton alloc] init];
+        self.chapter.titleLabel.font = [UIFont systemFontOfSize:ys_22];
+        [self.chapter setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [self.contentView addSubview:self.chapter];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        [self.contentView addSubview:self.titleLabel];
+        
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.selectButton.frame = CGRectMake(15, 0, 20, 20);
+    self.selectButton.centerY = self.contentView.height * 0.5;
+    
+    self.chapter.frame = CGRectMake(CGRectGetMaxX(self.selectButton.frame) + mainSpacing, 0, 45, 18);
+    self.chapter.centerY = self.contentView.height * 0.5;
+    
+    CGFloat titleX = CGRectGetMaxX(self.chapter.frame) + mainSpacing;
+    self.titleLabel.frame = CGRectMake(titleX, 0, 0, self.chapter.height);
+    self.titleLabel.centerY = self.chapter.centerY;
+    
+    UIImageView *normalImage = [[UIImageView alloc] initWithFrame:self.chapter.bounds];
+    [normalImage zy_cornerRadiusAdvance:fillet rectCornerType:UIRectCornerAllCorners];
+    
+    self.titleLabel.width = self.contentView.width - titleX - 15;
+    
+    normalImage.image = [UIImage createImageWithColor:AuxiliaryColor];
+    
+    [self.chapter setBackgroundImage:normalImage.image forState:UIControlStateNormal];
+    self.chapter.layer.cornerRadius = fillet;
+    
+}
+
+- (void)setTitle:(NSString *)title
+{
+    _title = title;
+    
+    self.titleLabel.text = title;
+    
+}
+
+- (void) selectButtonClick : (UIButton *) button
+{
+    button.selected = !button.selected;
+    
+    if ([self.delegate respondsToSelector:@selector(downLoadCellClick: selected:)]) {
+        [self.delegate downLoadCellClick:self selected:button.selected];
+    }
+}
+
+- (void)setModel:(ChapterModel *)model
+{
+    _model = model;
+    
+    self.selectButton.selected = model.buttonIsSelected;
+}
+
+@end

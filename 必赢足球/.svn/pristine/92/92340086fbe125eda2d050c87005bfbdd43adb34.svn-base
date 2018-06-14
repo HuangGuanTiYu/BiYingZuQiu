@@ -1,0 +1,66 @@
+//
+//  MianTabBarController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/4/19.
+//
+//
+
+#import "MianTabBarController.h"
+#import "MainNavigationController.h"
+#import "HotsPotController.h"
+#import "MineController.h"
+#import "ManyLanguageMag.h"
+#import "CourseViewControllerX.h"
+#import "InteractionController.h"
+#import "CourseLiveController.h"
+
+@interface MianTabBarController ()
+
+@end
+
+@implementation MianTabBarController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    HotsPotController *homeVc = [[HotsPotController alloc] init];
+    [self addChildViewController:homeVc title:[ManyLanguageMag getHottabbarStrWith:@"热点"] normalImage:@"common_hot_default" selectedImage:@"common_hot_active"];
+    
+    CourseViewControllerX *circleVc = [[CourseViewControllerX alloc] init];
+    [self addChildViewController:circleVc title:[ManyLanguageMag getHottabbarStrWith:@"课程"] normalImage:@"common_course_default" selectedImage:@"common_course_active"];
+    
+    InteractionController *nearbyVc = [[InteractionController alloc] init];
+    [self addChildViewController:nearbyVc title:[ManyLanguageMag getHottabbarStrWith:@"互动"] normalImage:@"common_interaction_default" selectedImage:@"common_interaction_active"];
+    
+    MineController *mineVc = [[MineController alloc] init];
+    [self addChildViewController:mineVc title:[ManyLanguageMag getHottabbarStrWith:@"我的"] normalImage:@"common_mine_default" selectedImage:@"common_mine_active"];
+    
+}
+
+- (void)addChildViewController:(UIViewController *)childController title : (NSString *)title normalImage : (NSString *)normalImage selectedImage : (NSString *)selectedImage
+{
+    childController.tabBarItem.image = [UIImage imageNamed:[NSString stringWithFormat:@"%@",normalImage]];
+    childController.title = title;
+    UIImage *selected = [UIImage imageNamed:[NSString stringWithFormat:@"%@",selectedImage]];
+    // 声明：这张图片按照原始的样子显示出来，不要渲染成其他的颜色（比如说默认的蓝色）
+    selected = [selected imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    childController.tabBarItem.selectedImage = selected;
+    MainNavigationController *mainNav = [[MainNavigationController alloc] initWithRootViewController:childController];
+    [self addChildViewController:mainNav];
+}
+
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+
+#pragma mark 全项目支持竖屏
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
+@end

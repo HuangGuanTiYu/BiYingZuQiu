@@ -1,0 +1,119 @@
+//
+//  CollectionReusableView.m
+//  MoveTag
+//
+//  Created by txx on 16/12/21.
+//  Copyright © 2016年 txx. All rights reserved.
+//
+
+#import "CollectionReusableView.h"
+
+@implementation CollectionReusableView
+
+-(instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self addSubview:self.titleLabel];
+        [self addSubview:self.buttonView];
+        
+        UIButton *addButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 25, self.buttonView.height)];
+        [addButton addTarget:self action:@selector(addButtonClick) forControlEvents:UIControlEventTouchUpInside];
+        [addButton setTitle:@"添加" forState:UIControlStateNormal];
+        [addButton setTitleColor:MainColor forState:UIControlStateNormal];
+        addButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.buttonView addSubview:addButton];
+        
+        UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(CGRectGetMaxX(addButton.frame) + mainSpacing, 0, 1, self.buttonView.height * 0.4)];
+        sepaView.backgroundColor = MainColor;
+        sepaView.centerY = self.buttonView.height * 0.5;
+        [self.buttonView addSubview:sepaView];
+        
+        UILabel *editButton = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(sepaView.frame) + mainSpacing, 0, 25, self.buttonView.height)];
+        editButton.userInteractionEnabled = YES;
+        self.editLabel = editButton;
+        [editButton addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(editButtonClick)]];
+        editButton.text = @"编辑";
+        editButton.textColor = MainColor;
+        editButton.font = [UIFont systemFontOfSize:ys_f24];
+        [self.buttonView addSubview:editButton];
+        
+    }
+    return self;
+}
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    self.titleLabel.frame = self.bounds;
+    self.titleLabel.x = 15;
+    self.titleLabel.width = self.width - 30;
+    
+    self.buttonView.centerY = self.titleLabel.centerY;
+
+}
+
+- (UILabel *)titleLabel {
+    if (!_titleLabel) {
+        UILabel *titleLabel = [UILabel new];
+        titleLabel.textColor = [UIColor blackColor];
+        titleLabel.adjustsFontSizeToFitWidth = YES;
+        _titleLabel = titleLabel;
+    }
+    return _titleLabel;
+}
+
+- (UIView *)buttonView {
+    if (!_buttonView) {
+        UIView *buttonView = [[UIView alloc] initWithFrame:CGRectMake(self.width - 70 - 15, 0, 70, 25)];
+        [self addSubview:buttonView];
+
+        _buttonView = buttonView;
+    }
+    return _buttonView;
+}
+
+- (void)setButtonClick:(BOOL)buttonClick
+{
+
+    _buttonClick = buttonClick;
+    
+    if (buttonClick) {
+        self.editLabel.text = @"编辑";
+    }else
+    {
+        self.editLabel.text = @"完成";
+    }
+}
+
+- (void)setIsMy:(BOOL)isMy
+{
+    _isMy = isMy;
+    
+    self.buttonView.hidden = !isMy;
+
+}
+
+- (void) addButtonClick
+{
+
+    if ([self.delegate respondsToSelector:@selector(addTag)]) {
+        [self.delegate addTag];
+    }
+}
+
+- (void) editButtonClick
+{
+    if ([self.editLabel.text isEqualToString:@"编辑"]) {
+        self.editLabel.text = @"完成";
+        if ([self.delegate respondsToSelector:@selector(editState:)]) {
+            [self.delegate editState:NO];
+        }
+    }else
+    {
+        self.editLabel.text = @"编辑";
+        if ([self.delegate respondsToSelector:@selector(editState:)]) {
+            [self.delegate editState:YES];
+        }
+    }
+}
+
+@end

@@ -1,0 +1,585 @@
+//
+//  PrefixHeader.pch
+//  MoveSchool
+//
+//  Created by edz on 2017/4/19.
+//
+//
+
+#ifndef PrefixHeader_pch
+#define PrefixHeader_pch
+
+#import "UIView+Extension.h"
+#import "NSDate+data.h"
+#import "UIBarButtonItem+Extension.h"
+#import "ManyLanguageMag.h"
+#import "UserInfoTool.h"
+#import "UserInfo.h"
+#import "UIView+Utils.h"
+#import "MBProgressHUD+MJ.h"
+#import "UIImage+Extension.h"
+
+/*颜色相关*/
+#define RGBColor(r, g, b) [UIColor colorWithRed:(r)/255.0 green:(g)/255.0 blue:(b)/255.0 alpha:1.0]
+#define RGBACOLOR(r,g,b,a) [UIColor colorWithRed:(r)/255.0 green:(g)/255.0 blue:(b)/255.0 alpha:a]
+
+
+#define RGBCOLOR(r,g,b) [UIColor colorWithRed:(r)/255.0 green:(g)/255.0 blue:(b)/255.0 alpha:1]
+
+#define RGBCOLOR_HEX(hexColor) [UIColor colorWithRed: (((hexColor >> 16) & 0xFF))/255.0f         \
+green: (((hexColor >> 8) & 0xFF))/255.0f          \
+blue: ((hexColor & 0xFF))/255.0f                 \
+alpha: 1]
+
+#define GreenColor RGBCOLOR(255,91,0)
+
+#define kColorBlack RGBCOLOR(68,68,68)              //黑色字体
+
+#define kColorGray154 RGBColor(154,154,154)
+
+#define kColorGray100 RGBColor(100,100,100)
+
+#define KMainColorRed RGBColor(245, 70, 50)
+
+//新定义字体  b代表黑体
+#define kFont12 [UIFont  systemFontOfSize:12]
+#define kFont12_b [UIFont  boldSystemFontOfSize:12]
+#define kFont13 [UIFont  systemFontOfSize:13]
+#define kFont13_b [UIFont  boldSystemFontOfSize:13]
+#define kFont14 [UIFont systemFontOfSize:14]
+#define kFont14_b [UIFont boldSystemFontOfSize:14]
+#define kFont16 [UIFont systemFontOfSize:16]
+#define kFont16_b [UIFont boldSystemFontOfSize:16]
+#define kColorGray240 RGBColor(240,240,240)
+#define kColorGray225 RGBColor(225,225,225)
+#define kColorGray154 RGBColor(154,154,154)
+#define kColorBlack64 RGBColor(64,64,64)
+#define kColorGray86 RGBColor(86,86,86)
+#define kColorGray100 RGBColor(100,100,100)
+
+//分割线颜色
+#define DivisionColor RGBColor(225,225,225)
+
+//分割块颜色
+#define DivisionDivColor RGBColor(240,240,240)
+
+#define kViewBackgroundColor RGBColor(243,243,243) //背景颜色
+
+/*颜色相关*/
+
+
+/*配置相关*/
+#define appkey @"" //appkey（企业专用）
+
+#define zttapiver @"1.1.1"
+
+#define FilePathWithName(fileName) [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:fileName]
+
+//保存用户信息
+#define UserInfoFileName @"userInfo.plist"
+
+//保存菜单信息
+#define MenusFileName @"menus.plist"
+
+//下载文件信息
+#define DWDownloadItemFileName @"DWDownloadItemFileName.plist"
+
+//保存朋友圈信息
+#define StudyFrameFileName @"studyFrameFileName.plist"
+
+//保存账号密码
+#define AccountFileName @"account.plist" 
+
+#define kImageMaxWidthPixelSize  1024
+
+#define SCREEN_WIDTH ([[UIScreen mainScreen] bounds].size.width)
+#define SCREEN_HEIGHT ([[UIScreen mainScreen] bounds].size.height)
+#define IS_IPHONE (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
+#define SCREEN_MAX_LENGTH (MAX(SCREEN_WIDTH, SCREEN_HEIGHT))
+#define IS_IPHONE_4_OR_LESS (IS_IPHONE && SCREEN_MAX_LENGTH < 568.0)
+
+#define SCUSER_DEFAULT [NSUserDefaults standardUserDefaults]
+
+//第一次进入APP
+#define Firsst_Start_App @"first_start_app"
+
+//消息推送是否打开
+#define MessageOpen @"MessageOpen"
+
+//用户偏好设置
+#define MainUserDefaults [NSUserDefaults standardUserDefaults]
+
+//语言类型
+#define ManylanguageType @"manylanguage"
+
+//登录时 是否记住密码
+#define remberPassword @"remberPassword"
+
+//文件服务器地址
+#define FileServerUrl @"fileServerUrl"
+
+//代理商KEY
+#define AGENTKEY @""
+
+//是否是手机号注册的
+#define MOBILE_HAS_REGISTER @"mobile_has_register"
+
+//友盟key
+#define USHARE_DEMO_APPKEY @"58dc9f46cae7e74ed3001d27"
+
+//微信 appkey
+#define wechatAppKey @"wx61f532a4d292bc98"
+
+//微信 appSecret
+#define wechatAppSecret @"33c88292b36318d4f25f8f45b1109174"
+
+//QQ appkey
+#define QQAppKey @"1104294933"
+
+//微博 appkey
+#define sinaAppKey @"165172900"
+
+//微博 appSecret
+#define sinaSecret @"edc4b32cdd172edc061851fbc1988178"
+
+#define kRedirectURI @"http://www.ydxt.com/m/weibo/callback"
+
+//课程type
+#define courseType @"40400"
+
+//直播type
+#define liveType @"40300"
+
+//沙龙type
+#define shalongType @"40200"
+
+//专题type
+#define specialType @"40100"
+
+//考试type
+#define testType @"30100"
+
+//问卷type
+#define voteType @"50100"
+
+//资讯type
+#define newsType @"50200"
+
+//讲师type
+#define teacherType @"10100"
+
+//CCPush 用户ID
+#define CCPushUserId @"2E470ED469196F8C"
+
+//CC视频播放
+#define DWACCOUNT_USERID @"9F20E74640BAAB03"
+#define DWACCOUNT_APIKEY @"BpP2S94498PnXWRaHwccLPgA5aX9Ibw1"
+
+//极光推送APP KEY
+#define JPUSH_APPKEY @"6f9208c499a5a2690bf5d921"
+
+//下载渠道
+#define appChannel @"App Store"
+
+//极光 设备唯一标识
+#define RegistrationID @"registrationID"
+
+//菜单列表
+#define Menus @"Menus"
+
+/*配置相关*/
+
+
+
+/*网络接口*/
+
+#define CalendarDate @"/m/hotmsg/month" //日历接口
+
+#define HotDetail @"/m/hotmsg/latest" //推荐热点接口
+
+#define PushHotPerson @"/m/hotmsg/reluser" //热点相关用户
+
+#define PushHotInfo @"/m/hotmsg/rel" //热点相关推荐
+
+#define HotIcoClick @"/m/sc/addr/uinfo" //热点头像点击//他人用户详细信息
+
+#define CheckinStatus @"/m/checkin/status" //获取签到状态
+
+#define VoteDetail @"/mh5/integral" //我的积分
+
+#define CardDetail @"/mh5/mycert" //我的证书
+
+#define Checkin @"/m/checkin" //打卡
+
+#define URL_REG_ACTIVE_CODE @"/m/sms/activecode" //获取验证码
+
+#define Treaty @"/mh5/treaty" //用户协议
+
+#define NewTreaty @"/m5/reg/treaty" //用户协议
+
+#define NewApply @"/m5/teacher/teacherAgreement" //讲师协议
+
+#define URL_PASSWORDCODE @"/m/login/rsa/publickey" //获取公钥
+
+#define URL_REG_MOBILE @"/m/reg/mobile" //手机号注册
+
+#define URL_REG_EMAIL @"/m/reg/mail" //邮箱注册
+
+#define FindPwdMobild @"/m/findpw/mobile" //找回密码（手机）
+
+#define FindPwdEmail @"/m/findpw/mail" //找回密码（邮箱）
+
+#define Login @"/m/login" //登录
+
+#define QQLogin @"/m/login/qq" //QQ登录
+
+#define WeiXinLogin @"/m/login/weixin" //微信登录
+
+#define SinaLogin @"/m/login/xinlangweibo" //微博登录
+
+#define GetUserInfo @"/m/userinfo" //获取个人信息
+
+#define MineCourseList @"/m/mycourse" //我的课程列表
+
+#define SpecialListX @"/m/myproject" //课程专题列表
+
+#define Solonlist @"/m/shalong/mylist" //我的沙龙祥情列表
+
+#define Livelist @"/m/live/user/mylist" //我的直播祥情列表
+
+#define TestDesc @"/mh5/testDesc" //我的试卷
+
+#define CourseAdd @"/m/course/add" //用户添加课程接口
+
+#define CourseDetail @"/m/course/detail" //课程详情
+
+#define Myshalonglist @"/mh5/shalong/myshalonglist" //我的沙龙列表
+
+#define Mylivelist @"/mh5/live/mylist" //我的直播列表
+
+#define Courselist @"/m/project/courselist" //专题祥情列表
+
+#define ABSpecial @"/m/project/rel" //相关专题
+
+#define Collection @"/m/favorite/add" //添加收藏接口
+
+#define Liveplay @"/mh5/live/play" //直播详情
+
+#define Mytest @"/mh5/mytest" //我的考试界面
+
+#define MyCollectionList @"/m/favorite/mylist" //收藏接口
+
+#define MycollectionL @"/mh5/favorite/mylist" //我的收藏h5
+
+#define BianQian @"/m/label/user/mylist" //定制的标签
+
+#define BianQianAdd @"/m/label/hotlist" //定制加号点击
+
+#define BianQianSeleted @"/m/label/user/selected"//定制选定
+
+#define Deletelable @"/m/label/user/del" //删除定制标签
+
+#define studyMap @"/m/studymap/mylist" //学习地图接口
+
+#define Projectlist @"/m/studymap/projectlist" //雷达图list
+
+#define StartLive @"/m/live/liveroominfo" //开启直播
+
+#define Quetion @"/mh5/vote/votequestions" //问卷
+
+#define Advice @"/m/help/list" //帮护与反馈
+
+#define AdvisoryOnly @"/mh5/advisoryOnly" //资讯详情
+
+#define Teacher @"/mh5/teacher" //我是讲师
+
+#define SheetImages @"/m/looppic" //轮播图
+
+#define HotRecommend @"/m/course/search/tags" //搜索热门推荐
+
+#define CourseSearch @"/m/course/search" //课程查询列表
+
+#define Hotcourse @"/m/hotcourse" //热门课程
+
+#define Guesslike @"/m/guesslike" //猜你喜欢
+
+#define SpecialList @"/m/project/recommend" //推荐专题列表
+
+#define liveReCommend @"/mh5/live/list" //推荐直播列表
+
+#define shalongReCommend @"/mh5/shalong/shalonglist" //推荐沙龙列表
+
+#define NOContent @"/pagerr/mh5/nodata" //空内容
+
+#define StudyLi @"/m/inst" //学习接口
+
+#define CollegeCourseList @"/m/find/inst" //学院课程列表
+
+#define Question @"/mh5/question" //问答
+
+#define HonorRoll @"/mh5/honorRoll" //荣誉榜
+
+#define StudyCircleList @"/m/sc/bbs/list" //学习圈数据
+
+#define CirClePraise @"/m/sc/bbs/praise" //学习圈点赞
+
+#define CirCleUnPraise @"/m/sc/bbs/unpraise" //学习圈取消点赞
+
+#define CirCleDelete @"/m/sc/bbs/del" //删除朋友圈内容
+
+#define CircleReply @"/m/sc/bbs/reply" //朋友圈评论
+
+#define CricleDeleteReply @"/m/sc/bbs/delreply" //朋友圈删除评论
+
+#define GetServerUrl @"/m/auxserverurl" //获取辅助服务器地址
+
+#define CricleSend @"/m/sc/bbs/add" //朋友圈发布
+
+#define FeedBack @"/m/feedback" //用户反馈
+
+#define UploadImage @"/upload/images" //朋友圈上传图片(多张)
+
+#define UploadOneImage @"/upload/image" //上传图片(单张)
+
+#define UploadVoice @"/upload/voice" //上传录音
+
+#define Alterheadpic @"/m/user/alterheadpic" //修改头像
+
+#define FixUserInfo @"/m/userinfo/alter" //修改个人信息
+
+#define Resetpwd @"/mh5/user/resetpwd" //修改密码界面
+
+#define CourseDiscuss @"/m/course/discuss" //课程讨论列表
+
+#define CourseDiscussPraise @"/m/course/discuss/praise" //讨论点赞
+
+#define CourseDiscussAdd @"/m/discuss/add" //课程评论
+
+#define CourseDiscussReplay @"/m/discuss/replay" //课程讨论回复
+
+#define CourseAd @"/m/course/ad" //课程广告列表
+
+#define Praisecount @"/m/praise/count" //点赞数量
+
+#define TeacherAgreement @"/mh5/teacher/teacherAgreement" //讲师服务协议
+
+#define VideoInfo @"/video/info" //Ztt视频信息
+
+#define PraiseAdd @"/m/praise/add" //课程点赞
+
+#define UserCauseDepartment @"/m/userCauseDepartment" //我的事业部
+
+#define Userteacherapply @"/m/teacher/apply" //申请讲师
+
+#define CoinRoll @"/mh5/honorRoll/coinRoll" //积分排行
+
+#define InteractionRoll @"/mh5/honorRoll/interactionRoll" //互动排行
+
+#define StudyRoll @"/mh5/honorRoll/studyRoll" //学霸排行
+
+#define GetMyCourseList @"/m/makecourse/mylist" //我的课件列表
+
+#define CreateH5Course @"/h5course/createH5Course" //H5创建课件
+
+#define ViewH5Course @"/h5course/viewH5Course" //H5课件预览界面
+
+#define EditH5Course @"/h5course/editH5Course" //H5编辑界面
+
+#define DeleteH5Course @"/m/makecourse/delete" //H5课件删除
+
+#define OfflineH5Course @"/m/makecourse/offline" //h5课件下线
+
+#define PublishH5Course @"/m/makecourse/publish" //h5课件发布
+
+#define AppUpdate @"/m/update" //升级
+
+#define GetMsgRecord @"/m/msgRecord/getMsgRecordList" //获取我的消息
+
+#define GetMsgRecordCount @"/m/msgRecord/getMsgRecordCount" //获取红点
+
+#define GetMsgRecordAuditingList @"/m/msgRecord/getMsgRecordAuditingList" // 获取审核消息（我的）
+
+#define GetDicTipList @"/m/msgRecord/getDicTipList" // 获取审核意见语
+
+#define UpdateMsgRecordAuditing @"/m/msgRecord/updateMsgRecordAuditing" // 审核消息
+
+#define LearnRecord @"/m/learn/record" // 用户学习记录接口
+
+#define Permission @"/m/resources/permission/auth" //H5资源权限接口
+
+#define GetMenus @"/m5/resources/menus" //APP菜单控制
+
+/*网络接口*/
+
+
+/*工具相关*/
+#define M_ISSTRNULL(a) ((a) == nil || (a).length == 0 )
+#ifndef SCUSER_DEFAULT
+#define SCUSER_DEFAULT [NSUserDefaults standardUserDefaults]
+#endif
+
+//全局间距 10
+#define mainSpacing 10
+
+//学习圈 评论弹框的宽度
+#define ReplyWidth 150
+
+#define LOcaalVidioRecord "locaalvidirecoerd"
+
+#define LOcaalchapteridRecord "locaalvidirecoerderf"  //vedio
+
+//文字行间距
+#define LineSpacing 5
+
+/*工具相关*/
+
+/* 移动学堂5.0 */
+
+//主题色
+#define MainColor RGBCOLOR(255,91,0)
+
+//项目所有界面背景色
+#define ViewBackColor RGBCOLOR(245,245,245)
+
+//分割线颜色
+#define SepaViewColor RGBCOLOR(227,227,230)
+
+//仅用于课程详情章节表情(学完后)
+#define CourseFinish RGBCOLOR(182,182,182)
+
+//用于标题，重要内容文字信息
+#define MainTextColor RGBCOLOR(48,48,48)
+
+//用于辅助文字信息（浏览器，信息，点赞）
+#define AuxiliaryColor RGBCOLOR(143,143,143)
+
+//红色
+#define MainRedColor RGBCOLOR(255,40,24)
+
+//顶部导航标题字体大小
+#define ys_f30 15
+
+//大量用于内容标题及内容信息文字
+#define ys_f24 12
+
+//用于标签文字
+#define ys_f20 10
+
+//项目统一圆角角度
+#define fillet 1.5
+
+//我的
+#define MyModular 10400
+
+//积分
+#define MyCoin 10401
+
+//证书
+#define MyCert 10402
+
+//我的课件
+#define MyCourse 10420
+
+//我的消息
+#define MyMessage 10410
+
+//我的学习
+#define MyStudy 10430
+
+//我的关注
+#define MyFollow 10443
+
+//我的考试
+#define MyTest 10431
+
+//我的问卷
+#define MyQuestionnaire 10432
+
+//我的收藏
+#define MyCollection 10441
+
+/******************** 接口 **********************/
+
+//#define NetHeader @"https://www.ydxt.com" //域名 正式服
+#define NetHeader @"https://new.ydxt.com" //域名 测试服
+
+#define GetLatestMessage @"/m5/home/getLatestMessage" //首页轮播图方法
+
+#define GetRuessLikeList @"/m5/home/getRuessLikeList" //首页获取猜你喜欢方法
+
+#define GetMenus @"/m5/resources/menus" //APP菜单控制
+
+#define GetLabelClassList @"/m5/label/labelClassList" //获取资讯分类列表
+
+#define GetNewsList @"/m5/news/newsList" //获取资讯列表
+
+#define GetCoursesList @"/m5/courses/getCoursesList" //获取课程列表
+
+#define GetTeacherSort @"/m5/teacher/sort" //获取讲师分类
+
+#define GetLiveMyList @"/m5/live/myList" //获取直播列表
+
+#define GetTeacherlist @"/m5/teacher/teacherlist" //获取讲师列表
+
+#define GetShalonglist @"/m5/shalong/shalonglist" //获取沙龙列表
+
+#define Shalongdetail @"/mh5/shalong/shalongdetail" //沙龙详情
+
+#define NewsDetail @"/nodejs/h5/5/discover/information/informationDetail" //资讯详情
+
+#define TeacherDetail @"/nodejs/h5/5/discover/teacher/detail" //讲师详情
+
+#define TopicDetail @"/h5/topic/topicDetail" //专题详情
+
+#define GetCoursesDetail @"/m5/courses/getCoursesDetail" //课程详情
+
+#define GetCommentList @"/m5/comment/list" //获取评论列表
+
+#define FavoriteAdd @"/m5/favorite/add" //添加收藏
+
+#define FavoriteDel @"/m5/favorite/del" //删除收藏
+
+#define CommentAdd @"/m5/comment/add" //添加评论
+
+#define ValidateMobile @"/m5/reg/validateMobile" //验证手机号是否存在
+
+#define SendMobileCode @"/m5/reg/sendMobileCode" //发送手机短信验证码
+
+#define M5Reg @"/m5/reg" //注册接口
+
+#define ApplyTeacher @"/m5/reg/applyTeacher" //申请讲师
+
+#define ApplyCompany @"/m5/reg/applyCompany" //申请企业
+
+#define ResetPwdActionByMobile @"/m5/reg/resetPwdActionByMobile" //手机找回密码
+
+#define ValidateEmail @"/m5/reg/validateEmail" //验证邮箱是否存在
+
+#define ResetPwdAction @"/m5/reg/resetPwdAction" //邮箱重置密码
+
+#define SendPwdEmail @"/m5/reg/sendPwdEmail" //发送邮件
+
+#define GetMy @"/m5/my/my" //获取我的信息
+
+#define MyCheckin @"/m5/my/checkin" //用户签到
+
+#define BusinessCount @"/m5/mystudy/businessCount" //我的学习业务数量接口
+
+#define MystudyList @"/m5/mystudy/list" //我的学习 相关业务列表
+
+#define Mytestlist @"/m5/test/mytestlist" //我的考试列表
+
+#define MyVotelist @"/m5/vote/votelist" //我的问卷列表
+
+#define VotetagsDesc @"/m5/vote/votetagsDesc" //我的问卷详情
+
+#define MyFavoriteList @"/vue/h5/favorite/mylist" //我的收藏列表
+
+#define MyFocus @"/m5/teacher/myFocus" //我的关注
+
+#define TeacherFocus @"/m5/teacher/focus" //关注 取消关注
+
+/******************** 接口 **********************/
+
+
+#endif /* PrefixHeader_pch */

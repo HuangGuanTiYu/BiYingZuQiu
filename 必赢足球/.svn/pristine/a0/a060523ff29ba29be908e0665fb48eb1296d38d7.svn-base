@@ -1,0 +1,645 @@
+//
+//  StudyCircleCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/5/6.
+//
+//
+
+#import "StudyCircleCell.h"
+#import "StudyCircleModel.h"
+#import "StudyCircleFrame.h"
+#import "UIImageView+WebCache.h"
+#import "NSAttributedString+Extension.h"
+#import "NSDataEx.h"
+#import "NSDate+Extension.h"
+#import "StudyAttachs.h"
+#import "StudyReply.h"
+#import "StudyReplyCell.h"
+#import "AllTitleButton.h"
+#import "UIColor+Hex.h"
+#import "StudyPraises.h"
+#import "UILabel+YBAttributeTextTapAction.h"
+#import "TBCityIconFont.h"
+
+//图片间距
+#define imageSpacint 4
+
+@interface StudyCircleCell()<UITableViewDelegate, UITableViewDataSource,StudyReplyCellDelegate>
+
+//头像
+@property(nonatomic, strong) UIImageView *headerView;
+
+//Vip
+@property(nonatomic, strong) UILabel *lvView;
+
+//名字
+@property(nonatomic, strong) AllTitleButton *nameLabel;
+
+//内容View
+@property(nonatomic, strong) UIView *contentsView;
+
+//文字内容
+@property(nonatomic, strong) UILabel *contentLabel;
+
+//图片 (1~9 张)
+@property(nonatomic, strong) UIView *imagesView;
+
+//分享出来的 标题
+@property(nonatomic, strong) UILabel *titleLabel;
+
+//全文
+@property(nonatomic, strong) AllTitleButton *allButton;
+
+//时间
+@property(nonatomic, strong) UILabel *timeLabel;
+
+//课程or沙龙 描述
+@property(nonatomic, strong) UILabel *describeLabel;
+
+@property(nonatomic, strong) UIButton *startButton;
+
+//删除
+@property(nonatomic, strong) AllTitleButton *deleteButton;
+
+//评论 + 赞 按钮
+@property(nonatomic, strong) UIButton *commentButton;
+
+//评论 + 赞 区
+@property(nonatomic, strong) UIImageView *commentView;
+
+//赞 列表
+@property(nonatomic, strong) UILabel *praiseListView;
+
+//赞列表和评论列表分割线
+@property(nonatomic, strong) UIView *replyPraiseSpeaView;
+
+//图片imageView数组
+@property(nonatomic, strong) NSMutableArray *imageViews;
+
+//弹出框（评论按钮）
+@property(nonatomic, strong) UIButton *alertReplyButton;
+
+//弹出框（赞按钮）
+@property(nonatomic, strong) UIButton *alertGoodButton;
+
+//弹出框 分割线
+@property(nonatomic, strong) UIView *alertSepaView;
+
+//cell 分割线
+@property(nonatomic, strong) UIView *cellSepaView;
+
+@end
+
+@implementation StudyCircleCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.headerView = [[UIImageView alloc] init];
+        self.headerView.userInteractionEnabled = YES;
+        [self.headerView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(headerClick:)]];
+        [self.contentView addSubview:self.headerView];
+        
+        self.lvView = [[UILabel alloc] init];
+        self.lvView.textAlignment = NSTextAlignmentCenter;
+        self.lvView.font = [UIFont systemFontOfSize:ys_f20];
+        self.lvView.textColor = kColorBlack;
+        self.lvView.backgroundColor = RGBCOLOR(235, 205, 52);
+        [self.contentView addSubview:self.lvView];
+        
+        self.nameLabel = [[AllTitleButton alloc] init];
+        [self.nameLabel setTitleColor:RGBCOLOR(92, 104, 128) forState:UIControlStateNormal];
+        [self.nameLabel addTarget:self action:@selector(nameLabelClick) forControlEvents:UIControlEventTouchUpInside];
+        self.nameLabel.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+        [self.contentView addSubview:self.nameLabel];
+        
+        self.contentsView = [[UIView alloc] init];
+        self.contentsView.clipsToBounds = YES;
+        [self.contentView addSubview:self.contentsView];
+        
+        self.contentLabel = [[UILabel alloc] init];
+        self.contentLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.contentLabel.numberOfLines = 0;
+        [self.contentsView addSubview:self.contentLabel];
+        
+        self.imagesView = [[UIView alloc] init];
+        self.imagesView.hidden = YES;
+        [self.contentView addSubview:self.imagesView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.allButton = [[AllTitleButton alloc] init];
+        [self.allButton setTitle:@"全文" forState:UIControlStateNormal];
+        [self.allButton setTitleColor:RGBCOLOR(92, 104, 128) forState:UIControlStateNormal];
+        self.allButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.allButton.hidden = YES;
+        [self.allButton addTarget:self action:@selector(allButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        [self.contentView addSubview:self.allButton];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.textColor = kColorBlack;
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.describeLabel = [[UILabel alloc] init];
+        self.describeLabel.textColor = kColorBlack;
+        self.describeLabel.hidden = YES;
+        self.describeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.contentView addSubview:self.describeLabel];
+        
+        self.startButton = [[UIButton alloc] init];
+        self.startButton.hidden = YES;
+        [self.startButton addTarget:self action:@selector(startButtonClick) forControlEvents:UIControlEventTouchUpInside];
+        [self.startButton setImage:[UIImage imageNamed:@"course_player_btn"] forState:UIControlStateNormal];
+        [self.contentView addSubview:self.startButton];
+        
+        self.deleteButton = [[AllTitleButton alloc] init];
+        self.deleteButton.hidden = YES;
+        [self.deleteButton setTitle:@"删除" forState:UIControlStateNormal];
+        [self.deleteButton setTitleColor:RGBCOLOR(92, 104, 128) forState:UIControlStateNormal];
+        [self.deleteButton addTarget:self action:@selector(deleteButtonClick) forControlEvents:UIControlEventTouchUpInside];
+        self.deleteButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.contentView addSubview:self.deleteButton];
+        
+        self.commentButton = [[UIButton alloc] init];
+        [self.commentButton addTarget:self action:@selector(commentButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        [self.commentButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e63c", 18, MainColor)] forState:UIControlStateNormal];
+        [self.contentView addSubview:self.commentButton];
+        
+        self.commentView = [[UIImageView alloc] init];
+        UIImage *stretchableImage = [[UIImage imageNamed:@"commentBj"] resizableImageWithCapInsets:UIEdgeInsetsMake(10, 15, 0, 0) resizingMode:UIImageResizingModeStretch];
+        self.commentView.image = stretchableImage;
+        [self.contentView addSubview:self.commentView];
+        
+        self.replyAlertView = [[UIView alloc] init];
+        self.replyAlertView.backgroundColor = [UIColor colorWithHexString:@"#4d5154"];
+        [self.contentView addSubview:self.replyAlertView];
+        
+        self.alertReplyButton = [[UIButton alloc] init];
+        [self.alertReplyButton setTitle:@"评论" forState:UIControlStateNormal];
+        self.alertReplyButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.alertReplyButton setImage:[UIImage imageNamed:@"btn_comment"] forState:UIControlStateNormal];
+        [self.alertReplyButton setImage:[UIImage imageNamed:@"btn_comment_h"] forState:UIControlStateHighlighted];
+        [self.alertReplyButton addTarget:self action:@selector(replyButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        self.alertReplyButton.titleEdgeInsets = UIEdgeInsetsMake(0, mainSpacing, 0, 0);
+        [self.replyAlertView addSubview:self.alertReplyButton];
+        
+        self.alertGoodButton = [[UIButton alloc] init];
+        [self.alertGoodButton addTarget:self action:@selector(goodButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        [self.alertGoodButton setTitle:@"赞" forState:UIControlStateNormal];
+        self.alertGoodButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.alertGoodButton setImage:[UIImage imageNamed:@"frends_subpraise"] forState:UIControlStateNormal];
+        [self.alertGoodButton setImage:[UIImage imageNamed:@"frends_subpraise_h"] forState:UIControlStateHighlighted];
+
+        self.alertGoodButton.titleEdgeInsets = UIEdgeInsetsMake(0, mainSpacing, 0, 0);
+        [self.replyAlertView addSubview:self.alertGoodButton];
+        
+        self.alertSepaView = [[UIView alloc] init];
+        self.alertSepaView.alpha = 0.2;
+        self.alertSepaView.backgroundColor = [UIColor blackColor];
+        [self.replyAlertView addSubview:self.alertSepaView];
+        
+        self.cellSepaView = [[UIView alloc] init];
+        self.cellSepaView.backgroundColor = DivisionColor;
+        [self.contentView addSubview:self.cellSepaView];
+        
+        self.praiseListView = [[UILabel alloc] init];
+        self.praiseListView.numberOfLines = 0;
+        self.praiseListView.font = [UIFont systemFontOfSize:ys_f24];
+        self.praiseListView.hidden = YES;
+        [self.contentView addSubview:self.praiseListView];
+        
+        self.commentTableView = [[UITableView alloc] init];
+        self.commentTableView.backgroundColor = [UIColor clearColor];
+        self.commentTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        self.commentTableView.hidden = YES;
+        self.commentTableView.scrollEnabled = NO;
+        self.commentTableView.delegate = self;
+        self.commentTableView.dataSource = self;
+        [self.contentView addSubview:self.commentTableView];
+        
+        self.replyPraiseSpeaView = [[UIView alloc] init];
+        self.replyPraiseSpeaView.backgroundColor = DivisionColor;
+        [self.contentView addSubview:self.replyPraiseSpeaView];
+        
+        self.imageViews = [NSMutableArray array];
+    }
+    return self;
+}
+
+- (void)setStudyCircleFrame:(StudyCircleFrame *)studyCircleFrame
+{
+    _studyCircleFrame = studyCircleFrame;
+    
+    StudyCircleModel *model = studyCircleFrame.studyCircleModel;
+    
+    [self.headerView sd_setImageWithURL:[NSURL URLWithString:model.headimgurl] placeholderImage:[UIImage imageNamed:@"mineNormal"]];
+    self.headerView.frame = studyCircleFrame.headerFrame;
+    self.headerView.layer.cornerRadius = studyCircleFrame.headerFrame.size.width * 0.5;
+    self.headerView.layer.masksToBounds = YES;
+    
+    [self.nameLabel setTitle:model.nickname forState:UIControlStateNormal];
+    self.nameLabel.frame = studyCircleFrame.nameFrame;
+    
+    self.lvView.text = [NSString stringWithFormat:@"LV%ld",(long)model.userlv];
+    self.lvView.frame = studyCircleFrame.vipFrame;
+    self.lvView.layer.cornerRadius = self.lvView.height * 0.5;
+    self.lvView.layer.masksToBounds = YES;
+    
+    if (model.content.length > 0) {
+        self.contentLabel.hidden = NO;
+        // 调整行间距
+        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[self base64DecodeString:model.content]];
+
+        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+        [paragraphStyle setLineSpacing:LineSpacing];
+        [attributedString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, [[self base64DecodeString:model.content] length])];
+
+        self.contentLabel.attributedText = attributedString;
+
+        self.contentsView.frame = studyCircleFrame.contentFrame;
+        self.contentLabel.frame = self.contentsView.bounds;
+        
+        self.allButton.frame = studyCircleFrame.allFrame;
+
+        if (studyCircleFrame.isMoreThanSix) {
+            self.contentsView.clipsToBounds = YES;
+            self.allButton.hidden = NO;
+        }else
+        {
+            self.allButton.hidden = YES;
+            self.contentsView.clipsToBounds = NO;
+        }
+    
+        [self.contentLabel sizeToFit];
+    }else
+    {
+        self.contentLabel.hidden = YES;
+        self.allButton.hidden = YES;
+    }
+    
+    NSDate *date = [self getDateByString:model.indate];
+    self.timeLabel.text = [date timeIntervalDescription];
+    self.timeLabel.frame = studyCircleFrame.timeFrame;
+    [self.timeLabel sizeToFit];
+
+    self.deleteButton.hidden = model.isself == 0;
+    self.deleteButton.frame = studyCircleFrame.deleteFrame;
+    
+    self.commentButton.frame = studyCircleFrame.commentButtonFrame;
+    self.replyAlertView.frame = studyCircleFrame.commentAlertFrame;
+    self.replyAlertView.layer.cornerRadius = 5;
+    self.replyAlertView.layer.masksToBounds = YES;
+    
+    self.alertReplyButton.frame = studyCircleFrame.alertReplyFrame;
+    self.alertGoodButton.frame = studyCircleFrame.alertGoodFrame;
+    self.alertSepaView.frame = studyCircleFrame.alertSepaViewFrame;
+    self.cellSepaView.frame = studyCircleFrame.cellSepaViewFrame;
+    
+    BOOL isPraise = NO;
+    
+    if (model.praises.count > 0) {
+        for (StudyPraises *praise in model.praises) {
+            if (praise.userid == [[UserInfoTool getUserInfo].zttid integerValue]) {
+                isPraise = YES;
+            }
+        }
+    }
+    
+    [self setGoodButtonStatus:isPraise];
+    
+    if (self.imageViews.count > 0) {
+        [self.imageViews removeAllObjects];
+    }
+    
+    if (self.imagesView.subviews.count > 0) {
+        [self.imagesView removeAllSubviews];
+    }
+    
+    //有图片
+    if (model.attachs.count > 0) {
+        //计算 图片宽高
+        CGFloat imageWH = ((SCREEN_WIDTH - studyCircleFrame.nameFrame.origin.x * 1.5) - 2 * imageSpacint) / 3;
+        
+        self.imagesView.hidden = NO;
+        //只有一张图片
+        self.imagesView.frame = studyCircleFrame.imagesFrame;
+
+        //行数
+        int row = 3;
+        if (model.attachs.count == 4) {
+            row = 2;
+        }
+        
+        for (int i = 0; i < model.attachs.count; i ++) {
+            StudyAttachs *attach = model.attachs[i];
+            UIImageView *imageView = [[UIImageView alloc] initWithFrame:studyCircleFrame.oneImageFrame];
+            imageView.tag = i;
+            imageView.userInteractionEnabled = YES;
+            [imageView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imageViewClick:)]];
+            [imageView sd_setImageWithURL:[NSURL URLWithString:attach.url] placeholderImage:[UIImage imageNamed:@"circle_portrait153"]];
+            [self.imageViews addObject:imageView];
+            
+            imageView.x = (i % row) * (imageWH + imageSpacint);
+            imageView.y = (i / row) * (imageWH + imageSpacint);
+            [self.imagesView addSubview:imageView];
+        }
+    }else
+    {
+        self.imagesView.hidden = YES;
+    }
+    
+    
+    if (model.attachs.count > 0 && (model.type == 3 || model.type == [shalongType intValue] || model.type == [courseType intValue])) {
+        StudyAttachs *attach = [model.attachs firstObject];
+        self.describeLabel.text = attach.title;
+        self.describeLabel.frame = studyCircleFrame.describeFrame;
+        [self.describeLabel sizeToFit];
+        self.describeLabel.hidden = NO;
+        
+        self.startButton.frame = CGRectMake(0, 0, 60, 60);
+        self.startButton.centerX = self.imagesView.centerX;
+        self.startButton.centerY = self.imagesView.centerY;
+        
+        self.startButton.hidden = NO;
+    }else
+    {
+        self.startButton.hidden = YES;
+        self.describeLabel.hidden = YES;
+    }
+    
+    //赞列表
+    if (model.praises.count > 0) {
+        self.praiseListView.frame = studyCircleFrame.praiseListFrame;
+        self.praiseListView.hidden = NO;
+        
+        NSMutableAttributedString *attributeString = [[NSMutableAttributedString alloc] initWithAttributedString:studyCircleFrame.praiseAttribute];
+        
+        NSMutableString *praiseContent = [NSMutableString string];
+        NSMutableArray *nameArray = [NSMutableArray array];
+        for (StudyPraises *praise in model.praises) {
+            [praiseContent appendString:[NSString stringWithFormat:@"%@，",praise.nickname]];
+            [nameArray addObject:praise.nickname];
+        }
+        
+        if ([praiseContent containsString:@"，"]) {
+            praiseContent = (NSMutableString *)[praiseContent substringToIndex:praiseContent.length - 1];
+        }
+        
+        for (StudyPraises *praise in model.praises) {
+            NSRange range = [praiseContent rangeOfString:praise.nickname];
+            [attributeString addAttribute:NSForegroundColorAttributeName value:RGBCOLOR(92, 104, 128) range:NSMakeRange(range.location + 1, range.length)];
+            [attributeString addAttribute:NSFontAttributeName value:[UIFont boldSystemFontOfSize:ys_f24] range:NSMakeRange(range.location + 1, range.length)];
+        }
+
+        self.praiseListView.attributedText = attributeString;
+        [self.praiseListView yb_addAttributeTapActionWithStrings:nameArray tapClicked:^(NSString *string, NSRange range, NSInteger index) {
+            for (StudyPraises *praise in model.praises) {
+                if (praise.nickname != nil && praise.nickname.length > 0 && [praise.nickname isEqualToString:string]) {
+                    if ([self.delegate respondsToSelector:@selector(nameClick:userId:)]) {
+                        [self.delegate nameClick:self userId:praise.userid];
+                    }
+                }
+            }
+        }];
+    }else
+    {
+        self.praiseListView.hidden = YES;
+    }
+    
+    //评论
+    if (model.replys.count > 0) {
+        [self.commentTableView reloadData];
+        self.commentTableView.hidden = NO;
+        self.commentTableView.frame = studyCircleFrame.commentViewFrame;
+        
+        self.replyPraiseSpeaView.hidden = NO;
+        self.replyPraiseSpeaView.frame = CGRectMake(self.praiseListView.x, CGRectGetMaxY(studyCircleFrame.praiseListFrame) - 0.5 + mainSpacing * 0.5, self.praiseListView.width, 0.5);
+    }else
+    {
+        self.commentTableView.hidden = YES;
+        self.replyPraiseSpeaView.hidden = YES;
+    }
+    
+    if (model.replys.count > 0 || model.praises.count > 0) {
+        self.commentView.hidden = NO;
+        self.commentView.frame = studyCircleFrame.commentViewBjFrame;
+    }else
+    {
+        self.commentView.hidden = YES;
+    }
+}
+
+-(NSString *)base64DecodeString:(NSString *)string
+{
+    //1.将base64编码后的字符串『解码』为二进制数据
+    NSData *data = [NSData dataWithBase64EncodedString:string];
+    
+    //2.把二进制数据转换为字符串返回
+    return [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+}
+
+- (void) allButtonClick : (AllTitleButton *) allButton
+{
+    if ([allButton.titleLabel.text isEqualToString:@"全文"]) {
+        [self.allButton setTitle:@"收起" forState:UIControlStateNormal];
+        self.contentsView.clipsToBounds = NO;
+
+    }else
+    {
+        [self.allButton setTitle:@"全文" forState:UIControlStateNormal];
+        self.contentsView.clipsToBounds = YES;
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(allButtonClick:cell:)]) {
+        [self.delegate allButtonClick:allButton cell:self];
+    }
+}
+
+-(NSDate *) getDateByString:(NSString *)dateString
+{
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss.SSS"];
+    
+    NSDate *date = [formatter dateFromString:dateString];
+    
+    return date;
+}
+
+#pragma mark 头像点击
+- (void) headerClick : (UIGestureRecognizer *) recognizer
+{
+    if ([self.delegate respondsToSelector:@selector(nameLabelClick:)]) {
+        [self.delegate nameLabelClick:self];
+    }
+    
+//    UIImageView *headerView = (UIImageView *)recognizer.view;
+    
+//    if ([self.delegate respondsToSelector:@selector(imageClick:index:currentImageView:)]) {
+//        
+//        [self.delegate imageClick:1 index:0 currentImageView:@[headerView]];
+//    }
+}
+
+#pragma mark 图片点击
+- (void) imageViewClick : (UIGestureRecognizer *) recognizer
+{
+    UIImageView *view = (UIImageView *)recognizer.view;
+    
+    StudyCircleModel *model = self.studyCircleFrame.studyCircleModel;
+
+    if (model.type == 3 || model.type == [shalongType intValue] || model.type == [courseType intValue]) {
+        [self startButtonClick];
+    }else{
+        if ([self.delegate respondsToSelector:@selector(imageClick:index:currentImageView:)]) {
+            [self.delegate imageClick:model.attachs.count index:view.tag currentImageView:self.imageViews];
+        }
+    }    
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.studyCircleFrame.studyCircleModel.replys.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"RouteQueryCell";
+    // 根据标识去缓存池找cell
+    StudyReplyCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    // 不写这句直接崩掉，找不到循环引用的cell
+    if (cell == nil) {
+        cell = [[StudyReplyCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.backgroundColor = [UIColor clearColor];
+    cell.delegate = self;
+    StudyReply *model = self.studyCircleFrame.studyCircleModel.replys[indexPath.row];
+    cell.model = model;
+    return cell;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSValue *value = self.studyCircleFrame.commentsF[indexPath.row];
+    return [value CGRectValue].size.height;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    StudyReplyCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    StudyReply *reply = self.studyCircleFrame.studyCircleModel.replys[indexPath.row];
+    if ([self.delegate respondsToSelector:@selector(replyListClick:reply: studyCircleModel:studyReplyCell:)]) {
+        [self.delegate replyListClick:self reply:reply studyCircleModel:self.studyCircleFrame.studyCircleModel studyReplyCell:cell];
+    }
+    
+    [self closeReplyAlertView];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];// 取消选中
+}
+
+#pragma mark 评论按钮点击
+- (void) commentButtonClick : (UIButton *) button
+{
+    if (self.replyAlertView.width == 0) {
+        if ([self.delegate respondsToSelector:@selector(commentClick:)]) {
+            [self.delegate commentClick:self];
+        }
+    }
+    
+
+    [UIView animateWithDuration:0.2 animations:^{
+        self.replyAlertView.width = self.replyAlertView.width == 0 ? ReplyWidth : 0;
+        self.replyAlertView.x = self.replyAlertView.x == button.x ? button.x - ReplyWidth - 5 : button.x;
+    }];
+}
+
+#pragma mark 关闭评论弹框
+- (void) closeReplyAlertView
+{
+    self.replyAlertView.width = 0;
+    self.replyAlertView.x = self.commentButton.x;
+}
+
+#pragma mark 关闭评论弹框 带动画
+- (void) closeReplyAlertViewWithAnimate
+{
+    [UIView animateWithDuration:0.2 animations:^{
+        self.replyAlertView.width = 0;
+        self.replyAlertView.x = self.commentButton.x;
+    }];
+}
+
+#pragma mark 删除按钮点击
+- (void) deleteButtonClick
+{
+    if ([self.delegate respondsToSelector:@selector(deleteCircle:cid: studyCircleModel:)]) {
+        [self.delegate deleteCircle:self cid:self.studyCircleFrame.studyCircleModel.ID studyCircleModel:self.studyCircleFrame.studyCircleModel];
+    }
+    [self closeReplyAlertView];
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    [super touchesBegan:touches withEvent:event];
+    
+    if ([self.delegate respondsToSelector:@selector(closeKeyboard:)]) {
+        [self.delegate closeKeyboard:self];
+    }
+    [self closeReplyAlertView];
+}
+
+#pragma mark 赞👍
+- (void) goodButtonClick : (UIButton *) button
+{
+    if ([self.delegate respondsToSelector:@selector(praiseWithCid:isPraise:cell:)]) {
+        [self.delegate praiseWithCid:self.studyCircleFrame.studyCircleModel.ID isPraise:[button.titleLabel.text isEqualToString:@"赞"] cell:self];
+    }
+}
+
+#pragma mark 评论点击
+- (void) replyButtonClick : (UIButton *) button
+{
+    if ([self.delegate respondsToSelector:@selector(replyButtonCic:studyCircleModel:)]) {
+        [self.delegate replyButtonCic:self studyCircleModel:self.studyCircleFrame.studyCircleModel];
+    }
+}
+
+#pragma mark 设置赞按钮状态
+- (void) setGoodButtonStatus : (BOOL) isPraise
+{
+    if (!isPraise) {
+        [self.alertGoodButton setTitle:@"赞" forState:UIControlStateNormal];
+    }else
+    {
+        [self.alertGoodButton setTitle:@"取消" forState:UIControlStateNormal];
+    }
+}
+
+#pragma mark 昵称点击
+- (void) nameLabelClick
+{
+    if ([self.delegate respondsToSelector:@selector(nameLabelClick:)]) {
+        [self.delegate nameLabelClick:self];
+    }
+}
+
+- (void)nameClick:(NSInteger)userId
+{
+    if ([self.delegate respondsToSelector:@selector(nameClick:userId:)]) {
+        [self.delegate nameClick:self userId:userId];
+    }
+}
+
+#pragma mark 播放按钮点击
+- (void) startButtonClick
+{
+    if ([self.delegate respondsToSelector:@selector(startButtonClick:courseID:)] && self.studyCircleFrame.studyCircleModel.attachs.count > 0) {
+        StudyAttachs *attach = [self.studyCircleFrame.studyCircleModel.attachs firstObject];
+        [self.delegate startButtonClick:self.studyCircleFrame.studyCircleModel.type courseID:attach.courseid];
+    }
+}
+
+@end

@@ -1,0 +1,22 @@
+//
+//  VideoPreviewController.m
+//  MoveSchool
+//
+//  Created by edz on 2018/1/10.
+//
+
+#import "VideoPreviewController.h"
+
+@interface VideoPreviewController ()
+
+@end
+
+@implementation VideoPreviewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    
+}
+@end

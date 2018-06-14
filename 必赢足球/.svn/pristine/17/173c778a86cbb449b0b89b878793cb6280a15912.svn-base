@@ -1,0 +1,159 @@
+//
+//  SettingController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/17.
+//
+//
+
+#import "SettingController.h"
+#import "SettingCell.h"
+#import "ChangePasswordController.h"
+
+@interface SettingController ()<UITableViewDelegate, UITableViewDataSource>
+
+//标题数组
+@property(nonatomic, strong) NSArray *titleOnes;
+
+//标题数组
+@property(nonatomic, strong) NSArray *titleTwos;
+
+@end
+
+@implementation SettingController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setUpData];
+    
+    [self setUpUI];
+}
+
+#pragma mark 初始化数据
+- (void) setUpData
+{
+    self.titleOnes = @[@"密码修改",@"语言设置",@"消息推送",@"分享APP"];
+    
+    self.titleTwos = @[@"清除缓存",@"帮助反馈",@"关于我们"];
+
+}
+
+#pragma mark 初始化UI
+- (void) setUpUI
+{
+    self.title = @"设置";
+    
+    //列表
+    UITableView *tableView = [[UITableView alloc]initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"SettingCell";
+    SettingCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[SettingCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    if (indexPath.section == 0) {
+        cell.title = self.titleOnes[indexPath.row];
+    }else
+    {
+        cell.title = self.titleTwos[indexPath.row];
+    }
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (indexPath.section == 0) {
+        switch (indexPath.row) {
+            // 密码修改
+            case 0:
+            {
+                ChangePasswordController *changePVc = [[ChangePasswordController alloc] init];
+                [self.navigationController pushViewController:changePVc animated:YES];
+            }
+            default:
+                break;
+        }
+    }else
+    {
+        
+    }
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];// 取消选中
+}
+
+#pragma mark 组个数
+- (NSInteger) numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return 2;
+}
+
+#pragma mark 行个数
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return section == 0 ? self.titleOnes.count : self.titleTwos.count;
+}
+
+#pragma mark section头部间距
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return 0.01f;//section头部高度
+}
+
+#pragma mark section尾部间距
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+{
+    return section == 0 ? 10.0f : 78.0f;
+}
+
+#pragma mark 行高
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 44;
+}
+
+- (UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
+{
+    if (section == 1) {
+        UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 78)];
+        UIButton *logout = [[UIButton alloc] initWithFrame:CGRectMake(0, mainSpacing, footerView.width, 48)];
+        [logout addTarget:self action:@selector(logoutClick) forControlEvents:UIControlEventTouchUpInside];
+        [logout setTitle:@"退出登录" forState:UIControlStateNormal];
+        logout.titleLabel.textAlignment = NSTextAlignmentCenter;
+        logout.backgroundColor = [UIColor whiteColor];
+        [logout setTitleColor:MainColor forState:UIControlStateNormal];
+        logout.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [footerView addSubview:logout];
+        return footerView;
+    }
+    
+    UIView *footerView = [[UIView alloc] init];
+    footerView.backgroundColor = [UIColor clearColor];
+    return footerView;
+}
+
+
+#pragma mark 退出登录
+- (void) logoutClick
+{
+    
+    
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+@end

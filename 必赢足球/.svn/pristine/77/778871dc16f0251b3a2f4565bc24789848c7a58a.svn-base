@@ -1,0 +1,34 @@
+//
+//  StudyCircleModel.h
+//  MoveSchool
+//
+//  Created by edz on 2017/5/8.
+//
+//
+
+#import <Foundation/Foundation.h>
+
+@interface StudyCircleModel : NSObject<NSCoding>
+
+@property (nonatomic,copy) NSString *ID;
+@property (nonatomic,assign) NSInteger type;//1 图片附件 3 课程附件
+@property (nonatomic,copy) NSString *content;
+@property (nonatomic,copy) NSString *headimgurl;//用户头像
+@property (nonatomic,copy) NSString *nickname;//用户昵称
+@property (nonatomic,copy) NSString *indate;
+@property (nonatomic,assign) NSInteger isself;//0 非自己发布 1 自己发布
+@property (nonatomic,copy) NSString *showdate; //友好显示时间 刚刚 一分钟
+@property (nonatomic,assign) int64_t userid;
+@property (nonatomic,assign) NSInteger userlv;
+
+//主贴回复列表
+@property (nonatomic, strong) NSArray *replys;
+
+//主贴点赞列表
+@property (nonatomic, strong) NSArray *praises;
+
+//主贴附件列表
+@property (nonatomic, strong) NSArray *attachs;
+
+
+@end

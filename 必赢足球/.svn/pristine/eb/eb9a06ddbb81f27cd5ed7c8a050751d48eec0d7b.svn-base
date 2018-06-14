@@ -1,0 +1,29 @@
+//
+//  QuestionnaireModel.h
+//  MoveSchool
+//
+//  Created by edz on 2017/9/14.
+//
+//
+
+#import <Foundation/Foundation.h>
+
+@interface QuestionnaireModel : NSObject
+
+@property (nonatomic, copy) NSString *ID;
+
+@property (nonatomic, copy) NSString *votetitle; //问卷标题
+
+@property (nonatomic, copy) NSString *etime; //截止时间
+
+@property (nonatomic, copy) NSString *start; //1已开始
+
+@property (nonatomic, copy) NSString *guoqi; //1已过期 0未过期
+
+@property (nonatomic, copy) NSString *partake; //1未参与  2已参与
+
+@property (nonatomic, assign) int status;
+
+
+
+@end

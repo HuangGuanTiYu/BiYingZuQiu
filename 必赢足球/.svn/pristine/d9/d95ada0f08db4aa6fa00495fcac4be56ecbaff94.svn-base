@@ -1,0 +1,124 @@
+//
+//  MineDataCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/18.
+//
+//
+
+#import "MineDataCell.h"
+#import "SDImageCache.h"
+#import "TBCityIconFont.h"
+#import "UIImageView+WebCache.h"
+
+@interface MineDataCell()
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//箭头
+@property (nonatomic, strong) UIImageView *nextImage;
+
+//附标题
+@property (nonatomic, strong) UILabel *cacheLabel;
+
+@end
+
+@implementation MineDataCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.nextImage = [[UIImageView alloc] init];
+        self.nextImage.contentMode = UIViewContentModeCenter;
+        self.nextImage.image = [UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e614", ys_f24, AuxiliaryColor)];
+        [self.contentView addSubview:self.nextImage];
+        
+        self.cacheLabel = [[UILabel alloc] init];
+        self.cacheLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.cacheLabel.textColor = AuxiliaryColor;
+        self.cacheLabel.textAlignment = NSTextAlignmentRight;
+        [self.contentView addSubview:self.cacheLabel];
+        
+        self.divisionView = [[UIView alloc] init];
+        self.divisionView.backgroundColor = SepaViewColor;
+        [self.contentView addSubview:self.divisionView];
+        
+        self.headerImage = [[UIImageView alloc] init];
+        self.headerImage.hidden = YES;
+        [self.contentView addSubview:self.headerImage];
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.nextImage.frame = CGRectMake(self.width - 13 - 15, 0, 13, 13);
+    self.nextImage.centerY = self.height * 0.5;
+    
+    self.titleLabel.frame = CGRectMake(15, 0, 0, self.height);
+    [self.titleLabel sizeToFit];
+    self.titleLabel.height = self.height;
+    
+    self.cacheLabel.frame = CGRectMake(CGRectGetMaxX(self.titleLabel.frame) + mainSpacing, 0, 0, self.height);
+    
+    if ([self.title isEqualToString:@"邮箱"] || [self.title isEqualToString:@"工号"] || [self.title isEqualToString:@"部门"] || [self.title isEqualToString:@"公司"]) {
+        self.cacheLabel.width = self.contentView.width - CGRectGetMaxX(self.titleLabel.frame) - 30;
+    }else
+    {
+        self.cacheLabel.width = self.nextImage.x - CGRectGetMaxX(self.titleLabel.frame) - mainSpacing;
+    }
+    
+    self.divisionView.frame = CGRectMake(15, self.contentView.height - 0.5, self.contentView.width, 0.5);
+    
+    self.headerImage.frame = CGRectMake(0, 0, 34, 34);
+    self.headerImage.x = self.nextImage.x - 34 - mainSpacing;
+    self.headerImage.centerY = self.contentView.height * 0.5;
+    self.headerImage.layer.cornerRadius = 17;
+    self.headerImage.layer.masksToBounds = YES;
+    
+}
+
+- (void)setTitle:(NSString *)title
+{
+    
+    _title = title;
+    
+    self.titleLabel.text = title;
+    
+    UserInfo *userInfo = [UserInfoTool  getUserInfo];
+    [self.headerImage sd_setImageWithURL:[NSURL URLWithString:userInfo.headpic_path] placeholderImage:[UIImage imageNamed:@"my_touxiang"]];
+    
+    if ([title isEqualToString:@"头像"]) {
+        self.headerImage.hidden = NO;
+    }else
+    {
+        self.headerImage.hidden = YES;
+    }
+    
+    if ([title isEqualToString:@"邮箱"] || [title isEqualToString:@"工号"] || [title isEqualToString:@"部门"] || [title isEqualToString:@"公司"]) {
+        self.nextImage.hidden = YES;
+    }else
+    {
+        self.nextImage.hidden = NO;
+    }
+}
+
+- (void)setSubTitle:(NSString *)subTitle
+{
+    
+    _subTitle = subTitle;
+    
+    self.cacheLabel.text = subTitle;
+}
+
+
+@end

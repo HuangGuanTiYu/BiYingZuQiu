@@ -1,0 +1,729 @@
+//
+//  NewCourseDetailController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/25.
+//
+//
+
+#import "NewCourseDetailController.h"
+#import "AFNetWW.h"
+#import "NewCourseModel.h"
+#import "MJExtension.h"
+#import "UIImageView+WebCache.h"
+#import "CourseBean.h"
+#import "TBCityIconFont.h"
+#import "UILabel+Extension.h"
+#import "NSAttributedString+Extension.h"
+#import "CourseChapterCell.h"
+#import "ChapterModel.h"
+#import "CommentModel.h"
+#import "CommentCell.h"
+#import "CustomLabel.h"
+#import "ChatKeyBoard.h"
+#import "IQKeyboardManager.h"
+
+#define StatusBar_HEIGHT 20
+#define NavigationBar_HEIGHT 44
+
+@interface NewCourseDetailController ()<UITableViewDelegate, UITableViewDataSource,ChatKeyBoardDataSource,ChatKeyBoardDelegate>
+
+@property (nonatomic, strong) UIImageView *backImage;
+
+@property (nonatomic, strong) NewCourseModel *model;
+
+@property (nonatomic, strong) UILabel *contentLabel;
+
+@property (nonatomic, assign) CGFloat contentH;
+
+@property (nonatomic, strong) UIView *boomView;
+
+@property (nonatomic, strong) UILabel *allButton;
+
+@property (nonatomic, strong) UIView *contentView;
+
+@property (nonatomic, strong) UIView *headerView;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, strong) UIView *chapterView;
+
+@property (nonatomic, strong) NSArray *chapterDatas;
+
+@property (nonatomic, strong) UIView *navBarView;
+
+@property(nonatomic,strong)UIView *navigationBackView;
+
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//评论数组
+@property (nonatomic, strong) NSArray *comments;
+
+@property (nonatomic, strong) UITableView *commentTableView;
+
+@property (nonatomic, strong) UIView *footerView;
+
+//是否显示全部评论
+@property (nonatomic, assign) BOOL isMore;
+
+@property (nonatomic, strong) ChatKeyBoard *chatKeyBoard;
+
+@property (nonatomic, strong) UIView *maskView;
+
+
+@end
+
+@implementation NewCourseDetailController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.comments = [NSArray array];
+    
+    [self setUpData];
+    
+    if ([self respondsToSelector:@selector(setAutomaticallyAdjustsScrollViewInsets:)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+    }
+
+}
+
+#pragma mark -初始化导航栏
+- (void)setupNavigationBar {
+    
+    // 导航栏背景view
+    _navigationBackView = [[UIView alloc] init];
+    _navigationBackView.frame = CGRectMake(0, 0, SCREEN_WIDTH, StatusBar_HEIGHT + NavigationBar_HEIGHT);
+    [self.view addSubview:_navigationBackView];
+    
+    //标题
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:_navigationBackView.bounds];
+    titleLabel.alpha = 0;
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    self.titleLabel = titleLabel;
+    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    titleLabel.width = _navigationBackView.width * 0.6;
+    titleLabel.centerX = _navigationBackView.width * 0.5;
+    titleLabel.centerY = (_navigationBackView.height + 20) * 0.5;
+    titleLabel.text = self.model.courseBean.title;
+    [_navigationBackView addSubview:titleLabel];
+    
+    //返回按钮
+    UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [rightButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e807", 18, [UIColor whiteColor])] forState:UIControlStateNormal];
+    rightButton.size = rightButton.imageView.image.size;
+    [rightButton addTarget:self action:@selector(back) forControlEvents:UIControlEventTouchUpInside];
+    rightButton.centerY = titleLabel.centerY;
+    rightButton.x = 15;
+    [_navigationBackView addSubview:rightButton];
+}
+
+- (void) back
+{
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
+- (UIView *)navBarView {
+    if (!_navBarView) {
+        _navBarView = [[UIView alloc] init];
+        _navBarView.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, 64);
+    }
+    return _navBarView;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.navBarView removeFromSuperview];
+    [self.navigationController setNavigationBarHidden:YES animated:YES];
+    
+    [IQKeyboardManager sharedManager].shouldResignOnTouchOutside = NO;
+    [IQKeyboardManager sharedManager].enable = NO;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = NO;
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:YES];
+
+    [IQKeyboardManager sharedManager].shouldResignOnTouchOutside = YES;
+    [IQKeyboardManager sharedManager].enable = YES;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = YES;
+}
+
+- (void) setUpData
+{
+    //获取 课程和 章节
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@?index=0&count=100&courseid=%@&token=%@",NetHeader,GetCoursesDetail,self.courseid,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:likeUrl WithParameters:nil success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+             NewCourseModel *model = [NewCourseModel objectWithKeyValues:responseDic[@"data"]];
+             self.model = model;
+             
+             self.chapterDatas = [ChapterModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+             
+             [self setUpUI];
+             
+             //拉取评论
+             [self getComment];
+
+             [self.tableView reloadData];
+
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+}
+
+- (void) getComment
+{
+    //获取评论
+    NSString *url = [NSString stringWithFormat:@"%@%@?businessid=%@&businesscode=40400&token=%@",NetHeader,GetCommentList,self.courseid,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:url WithParameters:nil success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+             self.comments = [CommentModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+             
+             [self setUpFooterView];
+             
+             if (self.comments.count > 0) {
+                 [self.commentTableView reloadData];
+             }
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+}
+
+- (void) setUpUI
+{
+
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 0)];
+    self.headerView = headerView;
+    headerView.backgroundColor = ViewBackColor;
+    
+    //背景图
+    UIImageView *backImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 210)];
+    [backImage sd_setImageWithURL:[NSURL URLWithString:self.model.courseBean.image] placeholderImage:[UIImage imageNamed:@""]];
+    [headerView addSubview:backImage];
+    
+    //播放按钮
+    UIButton *startButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 45, 45)];
+    [startButton setImage:[UIImage imageNamed:@"kecheng_bofang"] forState:UIControlStateNormal];
+    startButton.centerX = self.view.width * 0.5;
+    startButton.centerY = backImage.height * 0.5;
+    [headerView addSubview:startButton];
+    
+    //标题
+    UIView *titleView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(backImage.frame), self.view.width, 45)];
+    titleView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:titleView];
+    
+    //分享
+    UIImageView *shareImage = [[UIImageView alloc] initWithFrame:CGRectMake(titleView.width - titleView.height, 0, titleView.height, titleView.height)];
+    shareImage.contentMode = UIViewContentModeCenter;
+    shareImage.image = [UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e642", 15, MainTextColor)];
+    [titleView addSubview:shareImage];
+    
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, shareImage.x - 30, titleView.height)];
+    titleLabel.text = self.model.courseBean.title;
+    titleLabel.textColor = MainTextColor;
+    titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [titleView addSubview:titleLabel];
+    
+    //内容
+    UIView *contentView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(titleView.frame) + mainSpacing, self.view.width, 105)];
+    self.contentView = contentView;
+    contentView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:contentView];
+    
+    UILabel *contentLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, 15, 0, 0)];
+    self.contentLabel = contentLabel;
+    contentLabel.width = contentView.width - 30;
+    contentLabel.height = contentView.height - 20;
+    contentLabel.font = [UIFont systemFontOfSize:ys_f24];
+    NSAttributedString * attrStr = [[NSAttributedString alloc] initWithData:[self.model.courseBean.desc dataUsingEncoding:NSUnicodeStringEncoding] options:@{ NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType } documentAttributes:nil error:nil];
+
+    contentLabel.attributedText = attrStr;
+    contentLabel.numberOfLines = 3;
+    contentLabel.textColor = MainTextColor;
+    [contentView addSubview:contentLabel];
+    
+    [UILabel changeLineSpaceForLabel:contentLabel WithSpace:2.5];
+    contentLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    
+    contentView.height = contentLabel.height + 30 + 2 * mainSpacing;
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:contentLabel.text];
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    [paragraphStyle setLineSpacing:2.5];
+    [attributedString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, [contentLabel.text length])];
+    
+    CGSize contentH = [attributedString returnAttributedStringRect:attributedString size:CGSizeMake(contentLabel.width, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]];
+    self.contentH = contentH.height;
+    
+    //底部 时长 + 免费
+    UIView *boomView = [[UIView alloc] initWithFrame:CGRectMake(15, CGRectGetMaxY(contentLabel.frame) + 7, contentView.width - 30, 30)];
+    self.boomView = boomView;
+    [contentView addSubview:boomView];
+    
+    if (contentH.height > contentLabel.height) {
+        UILabel *allButton = [[UILabel alloc] initWithFrame:CGRectMake(15, CGRectGetMaxY(contentLabel.frame) + 7, 50, 20)];
+        self.allButton = allButton;
+        allButton.userInteractionEnabled = YES;
+        [allButton addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(allButtonClick:)]];
+        allButton.text = @"展开";
+        allButton.textColor = MainColor;
+        allButton.font = [UIFont systemFontOfSize:ys_f24];
+        [contentView addSubview:allButton];
+        boomView.y = CGRectGetMaxY(allButton.frame) + 7;
+        contentView.height = contentLabel.height + 30 + 2 * mainSpacing + 20;
+
+    }
+    
+    //免费
+    UILabel *freeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 50, boomView.height)];
+    freeLabel.text = @"免费";
+    freeLabel.textColor = MainColor;
+    freeLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [boomView addSubview:freeLabel];
+    [freeLabel sizeToFit];
+    
+    //时长
+    CGFloat timeX = CGRectGetMaxX(freeLabel.frame) + mainSpacing;
+    UILabel *timeLabel = [[UILabel alloc] initWithFrame:CGRectMake(timeX, 0, boomView.width - timeX - mainSpacing, boomView.height)];
+    timeLabel.centerY = freeLabel.centerY;
+    timeLabel.text = [NSString stringWithFormat:@"时长：%@",self.model.courseBean.showDuration];
+    timeLabel.textColor = AuxiliaryColor;
+    timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [boomView addSubview:timeLabel];
+    
+    //课程章节
+    UIView *chapterView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(contentView.frame) + mainSpacing, headerView.width, 45)];
+    self.chapterView = chapterView;
+    chapterView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:chapterView];
+    
+    UILabel *chapter = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, chapterView.width - 30, chapterView.height)];
+    chapter.text = @"课程章节";
+    chapter.textColor = MainTextColor;
+    chapter.font = [UIFont systemFontOfSize:ys_f30];
+    [chapterView addSubview:chapter];
+    
+    //分割线
+    UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, chapterView.height - 0.5, chapterView.width, 0.5)];
+    sepaView.backgroundColor = SepaViewColor;
+    [chapterView addSubview:sepaView];
+    
+    headerView.height = CGRectGetMaxY(self.contentView.frame) + mainSpacing + 45;
+    
+    //章节
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.height = self.view.height - 55 - mainSpacing;
+    self.tableView = tableView;
+    tableView.backgroundColor = ViewBackColor;
+    tableView.tableHeaderView = headerView;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+
+    // 初始化导航栏
+    [self setupNavigationBar];
+
+    //底部工具条
+    [self setUpToolView];
+
+}
+
+- (void) setUpFooterView
+{
+    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 0)];
+    self.footerView = footerView;
+    UIView *footSepaView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, footerView.width, mainSpacing)];
+    footSepaView.backgroundColor = ViewBackColor;
+    [footerView addSubview:footSepaView];
+
+    //评论
+    UIView *commentView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(footSepaView.frame), footerView.width, 45)];
+    commentView.backgroundColor = [UIColor whiteColor];
+    [footerView addSubview:commentView];
+    
+    UILabel *chapter = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, commentView.width - 30, commentView.height)];
+    chapter.text = @"评论";
+    chapter.textColor = MainTextColor;
+    chapter.font = [UIFont systemFontOfSize:ys_f30];
+    [commentView addSubview:chapter];
+    
+    //分割线
+    UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, commentView.height - 0.5, commentView.width, 0.5)];
+    sepaView.backgroundColor = SepaViewColor;
+    [commentView addSubview:sepaView];
+    
+    //评论
+    UITableView *commentTableView = [[UITableView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(commentView.frame), self.view.width, self.view.height)];
+    commentTableView.backgroundColor = ViewBackColor;
+    commentTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    commentTableView.showsVerticalScrollIndicator = NO;
+    self.commentTableView = commentTableView;
+    commentTableView.scrollEnabled = NO;
+    commentTableView.delegate = self;
+    commentTableView.dataSource = self;
+    self.commentTableView.tableFooterView = [[UIView alloc] init];
+    
+    if (self.comments.count > 0) {
+        [footerView addSubview:commentTableView];
+        
+        if (self.comments.count > 3) {
+            UIButton *moreView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 44)];
+            [moreView addTarget:self action:@selector(moreViewClick) forControlEvents:UIControlEventTouchUpInside];
+            moreView.backgroundColor = [UIColor whiteColor];
+            moreView.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+            [moreView setTitle:@"查看更多评论" forState:UIControlStateNormal];
+            [moreView setTitleColor:MainColor forState:UIControlStateNormal];
+            commentTableView.tableFooterView = moreView;
+        }
+    }else
+    {
+        //没有评论
+        UIView *noCommentView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(commentView.frame), footerView.width, 207)];
+        noCommentView.backgroundColor = [UIColor whiteColor];
+        [footerView addSubview:noCommentView];
+        
+        //图片 + 文字
+        UIView *imageTexgView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, noCommentView.width, 129)];
+        imageTexgView.centerY = noCommentView.height * 0.5;
+        [noCommentView addSubview:imageTexgView];
+        
+        //背景图
+        UIImageView *noImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 121, 90)];
+        noImage.image = [UIImage imageNamed:@"kong"];
+        noImage.centerX = noCommentView.width * 0.5;
+        [imageTexgView addSubview:noImage];
+        
+        UILabel *toTestLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(noImage.frame) + 5, noCommentView.width, 20)];
+        toTestLabel.textAlignment = NSTextAlignmentCenter;
+        toTestLabel.text = @"还没有内容呀~";
+        toTestLabel.textColor = AuxiliaryColor;
+        toTestLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [imageTexgView addSubview:toTestLabel];
+    }
+    
+    int status = [self.model.testExist[@"data"][@"status"] intValue];
+    
+    if (status != -3 && status != -2) {
+        //考试
+        UIView *testView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, footerView.width, 272)];
+        testView.backgroundColor = [UIColor whiteColor];
+        [footerView addSubview:testView];
+        
+        UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, testView.width, mainSpacing)];
+        sepaView.backgroundColor = ViewBackColor;
+        [testView addSubview:sepaView];
+        
+        UIView *sepaView2 = [[UIView alloc] initWithFrame:CGRectMake(0, testView.height - mainSpacing, testView.width, mainSpacing)];
+        sepaView2.backgroundColor = ViewBackColor;
+        [testView addSubview:sepaView2];
+        
+        UILabel *testLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, mainSpacing, testView.width, 45)];
+        testLabel.text = @"考试";
+        testLabel.font = [UIFont systemFontOfSize:ys_f30];
+        testLabel.textColor = MainTextColor;
+        [testView addSubview:testLabel];
+        
+        UIView *sepaView3 = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(testLabel.frame), testView.width, 0.5)];
+        sepaView3.backgroundColor = SepaViewColor;
+        [testView addSubview:sepaView3];
+        
+        if (status == -1 || status == 0) { //参加考试/补考
+            UIView *toTestView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, testView.width, 51)];
+            toTestView.centerY = (testView.height + 45) * 0.5;
+            [testView addSubview:toTestView];
+            
+            //去考试
+            UIButton *toTestButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 90, 30)];
+            toTestButton.centerX = toTestView.width * 0.5;
+            toTestButton.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+            [toTestButton setTitleColor:MainColor forState:UIControlStateNormal];
+            [toTestButton setTitle:status == -1 ? @"去考试" : @"去补考" forState:UIControlStateNormal];
+            toTestButton.layer.borderWidth = 0.5;
+            toTestButton.layer.borderColor = MainColor.CGColor;
+            toTestButton.layer.cornerRadius = fillet;
+            toTestButton.layer.masksToBounds = YES;
+            [toTestView addSubview:toTestButton];
+            
+            UILabel *toTestLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(toTestButton.frame) + 5, toTestView.width, 20)];
+            toTestLabel.textAlignment = NSTextAlignmentCenter;
+            toTestLabel.text = @"学完了，可以去小测一下哦";
+            toTestLabel.textColor = AuxiliaryColor;
+            toTestLabel.font = [UIFont systemFontOfSize:ys_f24];
+            [toTestView addSubview:toTestLabel];
+            
+        }else if (status == 1) //考试通过
+        {
+            UIView *adopt = [[UIView alloc] initWithFrame:CGRectMake(0, 0, testView.width, 139)];
+            adopt.centerY = (testView.height + 45) * 0.5;
+            [testView addSubview:adopt];
+            
+            //背景图
+            UIImageView *adoptImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 121, 90)];
+            adoptImage.image = [UIImage imageNamed:@"kong"];
+            adoptImage.centerX = adopt.width * 0.5;
+            [adopt addSubview:adoptImage];
+            
+            //分数
+            UILabel *fractionLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 32, adoptImage.width, 20)];
+            fractionLabel.centerX = adoptImage.centerX;
+            fractionLabel.text = [NSString stringWithFormat:@"%@分",self.model.testExist[@"data"][@"score"]];
+            fractionLabel.font = [UIFont systemFontOfSize:21];
+            fractionLabel.textColor = MainColor;
+            fractionLabel.textAlignment = NSTextAlignmentCenter;
+            [adopt addSubview:fractionLabel];
+            
+            UILabel *toTestLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(adoptImage.frame) + 5, adopt.width, 20)];
+            toTestLabel.textAlignment = NSTextAlignmentCenter;
+            toTestLabel.text = @"恭喜您，考试成绩合格！";
+            toTestLabel.textColor = AuxiliaryColor;
+            toTestLabel.font = [UIFont systemFontOfSize:ys_f24];
+            [adopt addSubview:toTestLabel];
+            
+            UILabel *lookLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(toTestLabel.frame), adopt.width, 20)];
+            lookLabel.textAlignment = NSTextAlignmentCenter;
+            lookLabel.text = @"查看答案";
+            lookLabel.textColor = MainColor;
+            lookLabel.font = [UIFont systemFontOfSize:ys_f24];
+            [adopt addSubview:lookLabel];
+        }
+        
+        commentView.y = 272;
+        commentTableView.y = CGRectGetMaxY(commentView.frame);
+    }
+
+    //没有评论
+    if (self.comments.count == 0) {
+        footerView.height = 55 + 207;
+    }else
+    {
+        footerView.height = commentTableView.contentSize.height + 45 + mainSpacing;
+        
+        if (status != -3 && status != -2) {
+            footerView.height = commentTableView.contentSize.height + 45 + mainSpacing + 272;
+        }
+    }
+    
+    self.tableView.tableFooterView = footerView;
+}
+
+- (void) allButtonClick : (UIGestureRecognizer *) gestureRecognizer
+{
+    UILabel *view = (UILabel *)gestureRecognizer.view;
+    
+    if ([view.text isEqualToString:@"收起"]) {
+        view.text = @"展开";
+        self.contentLabel.height = 85;
+        self.contentLabel.numberOfLines = 3;
+    }else
+    {
+        view.text = @"收起";
+        self.contentLabel.height = self.contentH;
+        self.contentLabel.numberOfLines = 0;
+    }
+    
+    [self.contentLabel sizeToFit];
+    self.allButton.y = CGRectGetMaxY(self.contentLabel.frame) + 7;
+    self.boomView.y = CGRectGetMaxY(self.allButton.frame) + 7;
+    self.contentView.height = self.contentLabel.height + 30 + 2 * mainSpacing + 20;
+    self.chapterView.y = CGRectGetMaxY(self.contentView.frame) + mainSpacing;
+    
+    self.headerView.height = CGRectGetMaxY(self.chapterView.frame);
+    self.tableView.tableHeaderView = self.headerView;
+
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (tableView == self.tableView) {
+        return self.chapterDatas.count;
+    }else
+    {
+        if (self.isMore) {
+            return self.comments.count;
+        }
+        
+        return self.comments.count > 3 ? 3 : self.comments.count;
+    }
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (tableView == self.tableView) {
+        static NSString *ID = @"CourseChapterCell";
+        CourseChapterCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[CourseChapterCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        [cell.chapter setTitle:[NSString stringWithFormat:@"第%ld章",(long)indexPath.row + 1] forState:UIControlStateNormal];
+        ChapterModel *model = self.chapterDatas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }else
+    {
+        static NSString *ID = @"cell";
+        CommentCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[CommentCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        CommentModel *model = self.comments[indexPath.row];
+        cell.model = model;
+        return cell;
+    }
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (tableView == self.tableView) {
+        return 44;
+    }else
+    {
+        CommentModel *model = self.comments[indexPath.row];
+        return model.contentHeight + 46;
+    }
+}
+
+
+#pragma mark -UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    
+    CGFloat offset_Y = scrollView.contentOffset.y;
+    CGFloat alpha = (offset_Y)/300.0f;
+    
+    self.navigationBackView.backgroundColor = [MainColor colorWithAlphaComponent:alpha];
+    self.titleLabel.alpha = alpha;
+}
+
+#pragma mark 查看更多评论
+- (void) moreViewClick
+{
+    self.isMore = YES;
+    [self.commentTableView reloadData];
+    
+    self.commentTableView.tableFooterView = [[UIView alloc] init];
+
+    int status = [self.model.testExist[@"data"][@"status"] intValue];
+    
+    if (status != -3 && status != -2) {
+        self.footerView.height = self.commentTableView.contentSize.height + 45 + mainSpacing + 272;
+    }else
+    {
+        self.footerView.height = self.commentTableView.contentSize.height + 45 + mainSpacing;
+    }
+    self.tableView.tableFooterView = self.footerView;
+
+}
+
+#pragma mark 初始化工具条
+- (void) setUpToolView
+{
+    UIView *toolView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.height - 55, self.view.width, 55)];
+    toolView.backgroundColor = [UIColor whiteColor];
+    [self.view addSubview:toolView];
+    
+    //按钮间距
+    CGFloat buttonSpea = 35;
+    
+    //下载
+    UIButton *downButton = [[UIButton alloc] initLineWithFrame:CGRectMake(toolView.width - 25 - 19, 0, 19, 19)];
+    downButton.backgroundColor = [UIColor whiteColor];
+    downButton.centerY = toolView.height * 0.5;
+    [downButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e808", 18, MainTextColor)] forState:UIControlStateNormal];
+    [toolView addSubview:downButton];
+    
+    //收藏
+    UIButton *collectionButton = [[UIButton alloc] initLineWithFrame:CGRectMake(downButton.x - buttonSpea - 19, 0, 19, 19)];
+    collectionButton.backgroundColor = [UIColor whiteColor];
+    collectionButton.centerY = downButton.centerY;
+    if (self.model.courseBean.isFavorited) { //收藏
+        [collectionButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e643", 18, MainTextColor)] forState:UIControlStateNormal];
+    }else
+    {
+        [collectionButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e645", 18, MainColor)] forState:UIControlStateNormal];
+    }
+    [toolView addSubview:collectionButton];
+    
+    //赏
+    UIButton *goodButton = [[UIButton alloc] initLineWithFrame:CGRectMake(collectionButton.x - buttonSpea - 19, 0, 19, 19)];
+    goodButton.backgroundColor = [UIColor whiteColor];
+    goodButton.centerY = downButton.centerY;
+    [goodButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e648", 18, MainTextColor)] forState:UIControlStateNormal];
+    [toolView addSubview:goodButton];
+    
+    //写评论
+    CustomLabel *writeComment = [[CustomLabel alloc] initLineWithFrame:CGRectMake(15, 0, goodButton.x - 15 - 25, 35)];
+    writeComment.userInteractionEnabled = YES;
+    [writeComment addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(writeCommentClick)]];
+    writeComment.layer.cornerRadius = fillet;
+    writeComment.layer.masksToBounds = YES;
+    writeComment.textInsets = UIEdgeInsetsMake(0, mainSpacing, 0, 0);
+    writeComment.backgroundColor = ViewBackColor;
+    writeComment.textColor = AuxiliaryColor;
+    writeComment.text = @"写评论...";
+    writeComment.font = [UIFont systemFontOfSize:ys_f24];
+    writeComment.centerY = downButton.centerY;
+    [toolView addSubview:writeComment];
+    
+    self.chatKeyBoard = [ChatKeyBoard keyBoardWithNavgationBarTranslucent:NO];
+    [self.chatKeyBoard.chatToolBar.faceBtn setTitle:@"发布" forState:UIControlStateNormal];
+    self.chatKeyBoard.chatToolBar.faceBtn.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    [self.chatKeyBoard.chatToolBar.faceBtn setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+    self.chatKeyBoard.y = self.chatKeyBoard.y + 20;
+    self.chatKeyBoard.keyBoardStyle = KeyBoardStyleComment;
+    self.chatKeyBoard.delegate = self;
+    self.chatKeyBoard.dataSource = self;
+    self.chatKeyBoard.allowVoice = NO;
+    self.chatKeyBoard.allowMore = NO;
+    self.chatKeyBoard.allowSwitchBar = NO;
+    self.chatKeyBoard.backgroundColor = [UIColor whiteColor];
+    self.chatKeyBoard.chatToolBar.textView.backgroundColor = ViewBackColor;
+    self.chatKeyBoard.chatToolBar.textView.textColor = AuxiliaryColor;
+    self.chatKeyBoard.chatToolBar.textView.layer.borderColor = [UIColor clearColor].CGColor;
+    self.chatKeyBoard.placeHolder = @"写评论...";
+    
+    [self.view addSubview:self.chatKeyBoard];
+}
+
+#pragma mark 写评论点击
+- (void) writeCommentClick
+{
+    
+    UIView *maskView = [[UIView alloc] initLineWithFrame:self.view.bounds];
+    [maskView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maskViewClick)]];
+    self.maskView = maskView;
+    maskView.alpha = 0.5;
+    maskView.backgroundColor = [UIColor blackColor];
+    [self.view addSubview:maskView];
+
+    [self.view bringSubviewToFront:self.chatKeyBoard];
+    
+    [self.chatKeyBoard keyboardUpforComment];
+}
+
+- (void) maskViewClick
+{
+    [self.chatKeyBoard keyboardDownForComment];
+    if (self.maskView != nil) {
+        [self.maskView removeFromSuperview];
+    }
+}
+
+@end

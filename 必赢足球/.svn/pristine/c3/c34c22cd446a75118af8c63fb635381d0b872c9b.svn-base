@@ -1,0 +1,100 @@
+//
+//  VideoPreviewController.m
+//  MoveSchool
+//
+//  Created by edz on 2018/1/10.
+//
+
+#import "VideoPreviewController.h"
+#import "UIImageView+WebCache.h"
+#import "H5CourseModel.h"
+#import "NSString+Time_Extension.h"
+#import "UILabel+Extension.h"
+#import "CustomLabel.h"
+
+@interface VideoPreviewController ()
+
+@end
+
+@implementation VideoPreviewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    //背景图
+    UIImageView *backImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 210)];
+    [backImage sd_setImageWithURL:[NSURL URLWithString:self.model.headimgurl] placeholderImage:[UIImage imageNamed:@"zwt_kecheng"]];
+    [self.view addSubview:backImage];
+    
+    //标题
+    UIView *titleView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(backImage.frame), self.view.width, 45 + 150 + mainSpacing * 2 + 30)];
+    titleView.backgroundColor = [UIColor whiteColor];
+    [self.view addSubview:titleView];
+    
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, self.view.width - 30, 45)];
+    titleLabel.text = @"标题";
+    titleLabel.textColor = MainTextColor;
+    titleLabel.font = [UIFont systemFontOfSize:ys_28];
+    [titleView addSubview:titleLabel];
+    
+    //录音时长
+    UIView *recordTime = [[UIView alloc] initWithFrame:CGRectMake(mainSpacing15, CGRectGetMaxY(titleLabel.frame), self.view.width - 2 * mainSpacing15, 44)];
+    recordTime.layer.cornerRadius = 2.5;
+    recordTime.layer.masksToBounds = YES;
+    recordTime.backgroundColor = SepaViewColor;
+    [titleView addSubview:recordTime];
+    
+    //进度条
+    UISlider *durationSlider = [[UISlider alloc] initWithFrame:CGRectMake(mainSpacing15, 5, recordTime.width - 2 * mainSpacing15, 20)];
+    [durationSlider setThumbImage:[UIImage imageNamed:@"kc_jindutiao-1"] forState:UIControlStateNormal];
+    [durationSlider setThumbImage:[UIImage imageNamed:@"kc_jindutiao-1"] forState:UIControlStateHighlighted];
+    [recordTime addSubview:durationSlider];
+    durationSlider.maximumValue = self.model.duration;
+    
+    [durationSlider setMinimumTrackTintColor:MainColor];
+    [durationSlider setMaximumTrackTintColor:RGBCOLOR(237,238,240)];
+    
+    UILabel *startTime = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing15, CGRectGetMaxY(durationSlider.frame), recordTime.width * 0.5, 10)];
+    startTime.text = @"00:00:00";
+    startTime.textColor = MainTextColor;
+    startTime.font = [UIFont systemFontOfSize:ys_f24];
+    [recordTime addSubview:startTime];
+    
+    UILabel *endTime = [[UILabel alloc] initWithFrame:CGRectMake(recordTime.width * 0.5, startTime.y, recordTime.width * 0.5 - mainSpacing15, 10)];
+    endTime.text = [NSString getMMSSFromSS:[NSString stringWithFormat:@"%ld",(long)self.model.duration]];
+    endTime.textAlignment = NSTextAlignmentRight;
+    endTime.font = [UIFont systemFontOfSize:ys_f24];
+    endTime.textColor = MainTextColor;
+    [recordTime addSubview:endTime];
+    
+    //试听暂停 继续
+    UIButton *auditionButton = [[UIButton alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(recordTime.frame) + mainSpacing * 2, 79, 79)];
+    [auditionButton setImage:[UIImage imageNamed:@"zanting"] forState:UIControlStateNormal];
+    [auditionButton addTarget:self action:@selector(auditionButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+    auditionButton.centerX = self.view.width * 0.5;
+    [auditionButton setImage:[UIImage imageNamed:@"shiting"] forState:UIControlStateSelected];
+    auditionButton.titleLabel.textColor = AuxiliaryColor;
+    [titleView addSubview:auditionButton];
+    
+    UILabel *startLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(auditionButton.frame), self.view.width, 30)];
+    startLabel.textAlignment = NSTextAlignmentCenter;
+    startLabel.centerX = auditionButton.centerX;
+    startLabel.text = @"点击开始";
+    startLabel.textColor = AuxiliaryColor;
+    startLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [titleView addSubview:startLabel];
+    
+    //内容
+    
+    CustomLabel *contentLabel = [[CustomLabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(titleView.frame) + mainSpacing, self.view.width, 110)];
+    contentLabel.numberOfLines = 0;
+    contentLabel.textInsets = UIEdgeInsetsMake(0, mainSpacing, 0, 0);
+    contentLabel.backgroundColor = [UIColor whiteColor];
+    contentLabel.font = [UIFont systemFontOfSize:ys_28];
+    contentLabel.text = self.model.desc;
+    contentLabel.textColor = MainTextColor;
+    [self.view addSubview:contentLabel];
+    
+}
+@end

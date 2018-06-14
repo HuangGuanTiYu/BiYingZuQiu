@@ -1,0 +1,19 @@
+//
+//  SpecialCell.h
+//  MoveSchool
+//
+//  Created by edz on 2017/8/24.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class CourseSpecialModel;
+
+@interface SpecialCell : UITableViewCell
+
+@property (nonatomic, strong) CourseSpecialModel *model;
+
+//是否是来自我的学习
+@property (nonatomic, assign) BOOL isFromMyStudy;
+
+@end

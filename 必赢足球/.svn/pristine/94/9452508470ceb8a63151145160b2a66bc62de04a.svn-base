@@ -1,0 +1,22 @@
+//
+//  MyDownLoadCell.h
+//  MoveSchool
+//
+//  Created by edz on 2017/6/5.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class DWDownloadItem;
+
+@interface MyDownLoadCell : UITableViewCell
+
+@property (nonatomic, strong) DWDownloadItem *item;
+
+//是否可以编辑
+@property (nonatomic, assign) BOOL isEdit;
+
+//选中按钮
+@property (nonatomic, strong) UIButton *selectButton;
+
+@end

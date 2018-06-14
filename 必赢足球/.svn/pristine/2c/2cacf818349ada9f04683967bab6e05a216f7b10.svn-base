@@ -1,0 +1,113 @@
+//
+//  MyDownLoadCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/6/5.
+//
+//
+
+#import "MyDownLoadCell.h"
+#import "UIImageView+WebCache.h"
+#import "DWDownloadItem.h"
+
+@interface MyDownLoadCell()
+
+//图片
+@property (nonatomic, strong) UIImageView *headerView;
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//大小
+@property (nonatomic, strong) UILabel *sizeLabel;
+
+//分割线
+@property (nonatomic, strong) UIView *sepaView;
+
+
+@end
+
+@implementation MyDownLoadCell
+
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        self.selectButton = [[UIButton alloc] init];
+        self.selectButton.hidden = YES;
+        [self.selectButton addTarget:self action:@selector(selectButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+        [self.selectButton setImage:[UIImage imageNamed:@"common_checkbox_default"] forState:UIControlStateNormal];
+        [self.selectButton setImage:[UIImage imageNamed:@"common_checkbox_selected"] forState:UIControlStateSelected];
+        [self.contentView addSubview:self.selectButton];
+        
+        self.headerView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.textAlignment = NSTextAlignmentLeft;
+        self.titleLabel.font = [UIFont systemFontOfSize:14];
+        self.titleLabel.textColor = kColorBlack;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.sizeLabel = [[UILabel alloc] init];
+        self.sizeLabel.font = [UIFont systemFontOfSize:12];
+        self.sizeLabel.textAlignment = NSTextAlignmentLeft;
+        self.sizeLabel.textColor = kColorGray154;
+        [self.contentView addSubview:self.sizeLabel];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = DivisionColor;
+        [self.contentView addSubview:self.sepaView];
+        
+    }
+    return self;
+    
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.selectButton.frame = CGRectMake(mainSpacing, 0, 22, 22);
+    self.selectButton.centerY = self.height * 0.5;
+    
+    self.headerView.frame = CGRectMake(mainSpacing, 10, self.width * 0.34, self.height - 20);
+    self.headerView.centerY = self.height * 0.5;
+    
+    self.sepaView.frame = CGRectMake(0, self.contentView.height - 0.5, self.contentView.width, 0.5);
+    
+    self.titleLabel.frame = CGRectMake(CGRectGetMaxX(self.headerView.frame) + mainSpacing, mainSpacing, self.contentView.width - CGRectGetMaxX(self.headerView.frame) - 2 * mainSpacing, 30);
+    
+    self.sizeLabel.frame = CGRectMake(self.titleLabel.x, self.contentView.height - 30 - mainSpacing, self.titleLabel.width, 30);
+}
+
+- (void)setItem:(DWDownloadItem *)item
+{
+    _item = item;
+    
+    [self.headerView sd_setImageWithURL:[NSURL URLWithString:item.imageUrl] placeholderImage:[UIImage imageNamed:@"common_no_image"]];
+    
+    self.titleLabel.text = item.title;
+    
+    self.sizeLabel.text = item.size;
+    
+}
+
+- (void)setIsEdit:(BOOL)isEdit
+{
+    _isEdit = isEdit;
+    
+    self.selectButton.hidden = NO;
+    
+    self.headerView.x = isEdit ? CGRectGetMaxX(self.selectButton.frame) + mainSpacing : mainSpacing;
+    
+    self.titleLabel.x = self.sizeLabel.x = CGRectGetMaxX(self.headerView.frame) + mainSpacing;
+}
+
+#pragma mark 选中按钮点击
+- (void) selectButtonClick : (UIButton *) button
+{
+    button.selected = !button.selected;
+    
+}
+
+@end

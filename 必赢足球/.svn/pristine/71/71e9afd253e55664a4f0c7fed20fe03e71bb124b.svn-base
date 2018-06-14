@@ -1,0 +1,208 @@
+//
+//  MianTabBarController.m
+//  NewSchoolBus
+//
+//  Created by edz on 2017/8/8.
+//  Copyright © 2017年 edz. All rights reserved.
+//
+
+#import "MianTabBarController.h"
+#import "MainNavigationController.h"
+#import "ManyLanguageMag.h"
+#import "HomePageController.h"
+#import "FindController.h"
+#import "TBCityIconFont.h"
+#import "MineController.h"
+#import "StudyCircleController.h"
+#import "MenusModelTool.h"
+#import "MenusModel.h"
+#import "HBTabBarView.h"
+#import "ShareButton.h"
+#import "MainWebController.h"
+#import "ReleaseStudyController.h"
+
+@interface MianTabBarController ()<HBTabBarViewDelegate, ReleaseStudyControllerDelegate>
+
+// 中间加号 子菜单
+@property (nonatomic, strong) NSArray *subMenus;
+
+//遮罩
+@property(strong, nonatomic) UIView *shareMaskView;
+
+//分享模块
+@property(nonatomic, strong) UIView *templateView;
+
+@end
+
+@implementation MianTabBarController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    HomePageController *homeVc = [[HomePageController alloc] init];
+    [self addChildViewController:homeVc title:[ManyLanguageMag getHottabbarStrWith:@"首页"] normalImage:@"\U0000e618" selectedImage:@"\U0000e61d"];
+    
+    FindController *circleVc = [[FindController alloc] init];
+    [self addChildViewController:circleVc title:[ManyLanguageMag getHottabbarStrWith:@"发现"] normalImage:@"\U0000e616" selectedImage:@"\U0000e617"];
+    
+    StudyCircleController *study = [[StudyCircleController alloc] init];
+    [self addChildViewController:study title:[ManyLanguageMag getHottabbarStrWith:@"互动"] normalImage:@"\U0000e61e" selectedImage:@"\U0000e61f"];
+    
+    MineController *mineVc = [[MineController alloc] init];
+    [self addChildViewController:mineVc title:[ManyLanguageMag getHottabbarStrWith:@"我的"] normalImage:@"\U0000e620" selectedImage:@"\U0000e622"];
+
+    HBTabBarView *tabBar = [[HBTabBarView alloc] init];
+    tabBar.hbDelegate = self;
+    [self setValue:tabBar forKeyPath:@"tabBar"]; //KVC直接修改系统tabbar
+}
+
+- (void)addChildViewController:(UIViewController *)childController title : (NSString *)title normalImage : (NSString *)normalImage selectedImage : (NSString *)selectedImage
+{
+    childController.tabBarItem.image = [UIImage iconWithInfo:TBCityIconInfoMake(normalImage, 20, [UIColor redColor])];
+    childController.title = title;
+    UIImage *selected = [UIImage iconWithInfo:TBCityIconInfoMake(selectedImage, 20, MainColor)];
+    // 声明：这张图片按照原始的样子显示出来，不要渲染成其他的颜色（比如说默认的蓝色）
+    selected = [selected imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    childController.tabBarItem.selectedImage = selected;
+    MainNavigationController *mainNav = [[MainNavigationController alloc] initWithRootViewController:childController];
+    [self addChildViewController:mainNav];
+}
+
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+
+#pragma mark 全项目支持竖屏
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskAll;
+}
+
+- (void) hBTabBarViewDidClick : (HBTabBarView *)hBTabBarView
+{
+    NSArray *menus = [MenusModelTool menus];
+    
+    for (MenusModel *model in menus) {
+        if (model.ID == MenuID) {
+            self.subMenus = model.subs;
+        }
+    }
+    
+    NSMutableArray *shareArray = [NSMutableArray array];
+    for (int i = 0 ; i < self.subMenus.count; i ++) {
+        MenusModel *model = self.subMenus[i];
+        ShareButton *sinaButton = [[ShareButton alloc] init];
+        sinaButton.tag = model.ID;
+        [sinaButton setTitle:model.title forState:UIControlStateNormal];
+        [sinaButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        
+        NSString * iconStr = [NSString stringWithFormat:@"0x%@",model.icon];
+        unichar icon = strtoul([iconStr UTF8String],0, 16);
+        NSString *name = [NSString stringWithCharacters:&icon length:1];
+        
+        [sinaButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(name, 35, MainTextColor)] forState:UIControlStateNormal];
+        [shareArray addObject:sinaButton];
+    }
+    
+    if (shareArray.count > 0) {
+        
+        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        
+        UIView *shareView = [[UIView alloc] initWithFrame:window.bounds];
+        self.shareMaskView = shareView;
+        [shareView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(shareViewClick)]];
+        [window addSubview:shareView];
+        
+        //遮罩
+        UIView *maskView = [[UIView alloc] initWithFrame:shareView.bounds];
+        maskView.backgroundColor = [UIColor blackColor];
+        maskView.alpha = 0.7;
+        [shareView addSubview:maskView];
+        
+        //分享模块
+        UIView *templateView = [[UIView alloc] initWithFrame:CGRectMake(0, shareView.height, shareView.width, 110)];
+        self.templateView = templateView;
+        templateView.backgroundColor = [UIColor whiteColor];
+        [shareView addSubview:templateView];
+        
+        //按钮宽高
+        CGFloat buttonSize = 55;
+        
+        //间距
+        CGFloat spaing = (templateView.width - (shareArray.count) * buttonSize) / (shareArray.count + 1);
+        
+        for (int i = 0; i < shareArray.count; i ++) {
+            ShareButton *button = shareArray[i];
+            [button addTarget:self action:@selector(buttonClick:) forControlEvents:UIControlEventTouchUpInside];
+            button.frame = CGRectMake(i * (buttonSize + spaing) + spaing, 0, buttonSize, buttonSize * 2);
+            button.centerY = templateView.height * 0.5;
+            [templateView addSubview:button];
+        }
+        
+        [UIView animateWithDuration:0.3 animations:^{
+            templateView.y = shareView.height - templateView.height;
+        }];
+    }
+}
+
+#pragma mark 遮罩点击
+- (void) shareViewClick
+{
+    if (self.shareMaskView != nil && self.shareMaskView.superview != nil) {
+        [UIView animateWithDuration:0.3 animations:^{
+            self.templateView.y = self.shareMaskView.height;
+        } completion:^(BOOL finished) {
+            [self.templateView removeFromSuperview];
+            [self.shareMaskView removeFromSuperview];
+        }];
+    }
+}
+
+#pragma mark 分享按钮点击
+- (void) buttonClick : (UIButton *) button
+{
+    [self shareViewClickWithNoAnimate];
+    
+    //课件制作
+    if (button.tag == CourseCreate) {
+        MainWebController *webVc = [[MainWebController alloc] init];
+        webVc.isFromH5Course = YES;
+        webVc.isPresent = YES;
+        webVc.webTitle = @"创建课件";
+        NSString *header = [MainUserDefaults objectForKey:FileServerUrl];
+        webVc.url = [NSString stringWithFormat:@"%@/%@",header,CreateH5Course];
+        [self presentViewController:[[MainNavigationController alloc] initWithRootViewController:webVc] animated:YES completion:nil];
+    }
+    //发布广播
+    else if(button.tag == SendBroadcast)
+    {
+    
+        ReleaseStudyController *releaseVc = [[ReleaseStudyController alloc] init];
+        releaseVc.releaseStudy = YES;
+        releaseVc.delegate = self;
+        [self presentViewController:[[MainNavigationController alloc] initWithRootViewController:releaseVc] animated:YES completion:nil];
+    }
+}
+
+#pragma mark 删除分享平台不加动画
+- (void) shareViewClickWithNoAnimate
+{
+    if (self.shareMaskView!= nil && self.shareMaskView.superview != nil) {
+        [self.templateView removeFromSuperview];
+        [self.shareMaskView removeFromSuperview];
+    }
+}
+
+#pragma mark 发布成功
+- (void) sendSuccessRefush
+{
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"sendSuccessRefush" object:nil];
+
+}
+
+
+@end

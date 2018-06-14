@@ -1,0 +1,118 @@
+//
+//  NewMyTeacherController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/17.
+//
+//
+
+#import "NewMyTeacherController.h"
+#import "ApplyTeacherController.h"
+#import "AFNetWW.h"
+#import "MainWebController.h"
+#import "NewTeacherController.h"
+
+@interface NewMyTeacherController ()
+
+@end
+
+@implementation NewMyTeacherController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"我是讲师";
+    
+    [self setUpUI];
+}
+
+- (void) setUpUI
+{
+    
+    UIView *contentView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 180, 180)];
+    contentView.centerX = self.view.width * 0.5;
+    contentView.centerY = self.view.height * 0.5 - 64;
+    [self.view addSubview:contentView];
+    
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@",NetHeader,TeacherStatus];
+    
+    NSDictionary *dic = @{@"userid":[UserInfoTool getUserInfo].ID,@"token" : [UserInfoTool getUserInfo].token};
+
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:likeUrl WithParameters:dic success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+//            0未申请 1 正常 2审批申请 3禁用讲师 4未通过
+             int teacher = [responseDic[@"data"][@"teacher"] intValue];
+             
+             if (teacher == 0 || teacher == 4) {
+                 UIImageView *teacherImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 120, 80)];
+                 teacherImage.image = [UIImage imageNamed:@"jiangshi"];
+                 teacherImage.centerX = contentView.width * 0.5;
+                 [contentView addSubview:teacherImage];
+                 
+                 UILabel *teacherLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(teacherImage.frame) + 5, self.view.width, 20)];
+                 teacherLabel.centerX = contentView.width * 0.5;
+                 teacherLabel.font = [UIFont systemFontOfSize:ys_28];
+                 teacherLabel.text = @"您还不是讲师，赶快去申请吧";
+                 teacherLabel.textColor = AuxiliaryColor;
+                 teacherLabel.textAlignment = NSTextAlignmentCenter;
+                 [contentView addSubview:teacherLabel];
+                 
+                 UIButton * blankButton = [[UIButton alloc] initWithFrame:CGRectMake(0, contentView.height - 40, contentView.width, 40)];
+                 blankButton.centerX = contentView.width * 0.5;
+                 blankButton.backgroundColor = MainColor;
+                 blankButton.titleLabel.textAlignment = NSTextAlignmentCenter;
+                 [blankButton setTitle:@"申请讲师" forState:UIControlStateNormal];
+                 [blankButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                 blankButton.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+                 blankButton.layer.cornerRadius = fillet;
+                 blankButton.layer.masksToBounds = YES;
+                 [blankButton addTarget:self action:@selector(applyTeacher) forControlEvents:UIControlEventTouchUpInside];
+                 [contentView addSubview:blankButton];
+             }else if(teacher == 2 || teacher == 3)
+             {
+                 UIImageView *teacherImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 120, 80)];
+                 teacherImage.image = [UIImage imageNamed:@"jiangshi_audit"];
+                 teacherImage.centerX = contentView.width * 0.5;
+                 [contentView addSubview:teacherImage];
+                 
+                 UILabel *teacherLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(teacherImage.frame) + 5, contentView.width, 20)];
+                 teacherLabel.font = [UIFont systemFontOfSize:ys_28];
+                 teacherLabel.text = @"您的申请，正在审批中~";
+                 teacherLabel.textColor = AuxiliaryColor;
+                 teacherLabel.textAlignment = NSTextAlignmentCenter;
+                 [contentView addSubview:teacherLabel];
+             }else if(teacher == 1)
+             {
+                 
+                 NewTeacherController *newTeacherVc = [[NewTeacherController alloc] init];
+                 newTeacherVc.teacherid = [UserInfoTool getUserInfo].ID;
+                 newTeacherVc.nickname = [UserInfoTool getUserInfo].username;
+                 newTeacherVc.userid = [UserInfoTool getUserInfo].ID;
+                 [self.navigationController pushViewController:newTeacherVc animated:YES];
+             }
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+}
+
+- (void) applyTeacher
+{
+
+    ApplyTeacherController *teacherVc = [[ApplyTeacherController alloc] init];
+    [self.navigationController pushViewController:teacherVc animated:YES];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+@end

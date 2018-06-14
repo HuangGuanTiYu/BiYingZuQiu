@@ -1,0 +1,17 @@
+//
+//  SearchResultController.h
+//  MoveSchool
+//
+//  Created by edz on 2017/9/20.
+//
+//
+
+#import <UIKit/UIKit.h>
+#import "XLButtonBarPagerTabStripViewController.h"
+
+@interface SearchResultController : XLButtonBarPagerTabStripViewController
+
+//分类
+@property (nonatomic, strong) NSArray *classifys;
+
+@end

@@ -1,0 +1,26 @@
+//
+//  StudyCircleDetailController.h
+//  MoveSchool
+//
+//  Created by edz on 2017/11/24.
+//
+//
+
+#import <UIKit/UIKit.h>
+@class StudyCircleModel;
+
+@protocol StudyCircleDetailControllerDelete <NSObject>
+
+- (void) reloadData : (NSArray *) comments;
+
+- (void) deleteStudyCircle : (NSString *) cid studyCircleModel : (StudyCircleModel *) studyCircleModel;
+
+@end
+
+@interface StudyCircleDetailController : UIViewController
+
+@property (nonatomic, strong) StudyCircleModel *studyCircleModel;
+
+@property (nonatomic, weak) id<StudyCircleDetailControllerDelete> detailDelete;
+
+@end

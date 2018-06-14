@@ -1,0 +1,24 @@
+//
+//  CommentCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/31.
+//
+//
+
+#import "CommentCell.h"
+
+@implementation CommentCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    
+    if (self) {
+        
+        
+    }
+    return self;
+}
+
+@end

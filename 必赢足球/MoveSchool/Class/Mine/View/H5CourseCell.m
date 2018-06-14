@@ -1,0 +1,173 @@
+ //
+//  H5CourseCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/6/28.
+//
+//
+
+#import "H5CourseCell.h"
+#import "UIImageView+WebCache.h"
+#import "H5CourseModel.h"
+#import "TBCityIconFont.h"
+
+@interface H5CourseCell()
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//时间
+@property (nonatomic, strong) UILabel *timeLabel;
+
+//状态
+@property (nonatomic, strong) UIButton *stateButton;
+
+//编辑
+@property (nonatomic, strong) UIButton *editButton;
+
+//编辑按钮放大按钮
+@property (nonatomic, strong) UIButton *editBigButton;
+
+//发布和编辑按钮分割线
+@property (nonatomic, strong) UIView *sepaView;
+
+//课件ID
+@property (nonatomic, copy) NSString *ccid;
+
+//时长
+@property (nonatomic, strong) UIButton *timeButton;
+
+@end
+
+@implementation H5CourseCell
+
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    
+    if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        
+        self.headerView = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerView];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        self.titleLabel.numberOfLines = 2;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.timeLabel = [[UILabel alloc] init];
+        self.timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeLabel.textColor = RGBColor(143,143,143);
+        [self.contentView addSubview:self.timeLabel];
+        
+        self.stateButton = [[UIButton alloc] init];
+        [self.contentView addSubview:self.stateButton];
+        
+        self.editButton = [[UIButton alloc] init];
+        [self.contentView addSubview:self.editButton];
+        
+        self.editBigButton = [[UIButton alloc] init];
+        [self.editBigButton addTarget:self action:@selector(editClick) forControlEvents:UIControlEventTouchUpInside];
+        [self.contentView addSubview:self.editBigButton];
+        
+        self.editButton.titleLabel.font = self.stateButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = DivisionColor;
+        [self.contentView addSubview:self.sepaView];
+        
+        self.timeButton = [[UIButton alloc] init];
+        self.timeButton.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.timeButton.layer.borderColor = [UIColor whiteColor].CGColor;
+        self.timeButton.layer.borderWidth = 0.5;
+        self.timeButton.layer.cornerRadius = 3;
+        self.timeButton.layer.masksToBounds = YES;
+        [self.timeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        self.timeButton.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5];
+        [self.timeButton setImage:[UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e695", ys_f24, [UIColor whiteColor])] forState:UIControlStateNormal];
+        [self.contentView addSubview:self.timeButton];
+        self.timeButton.titleEdgeInsets = UIEdgeInsetsMake(0, mainSpacing, 0, 0);
+
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    CGFloat headerViewH = self.height - mainSpacing * 4;
+    self.headerView.frame = CGRectMake(mainSpacing, 0, headerViewH / 9 * 16, headerViewH);
+    self.headerView.centerY = self.height * 0.5;
+    
+    self.titleLabel.frame = CGRectMake(CGRectGetMaxX(self.headerView.frame) + mainSpacing, self.headerView.y, self.width - 2 * mainSpacing - CGRectGetMaxX(self.headerView.frame), self.headerView.height * 0.5);
+    [self.titleLabel sizeToFit];
+    
+    self.timeLabel.frame = CGRectMake(self.titleLabel.x, CGRectGetMaxY(self.headerView.frame) - 20, 50, 20);
+    [self.timeLabel sizeToFit];
+    
+    self.editButton.frame = CGRectMake(self.width - 30 - mainSpacing, self.timeLabel.y - 3, 30, 20);
+    
+    self.editBigButton.frame = CGRectMake(self.width - 40 - mainSpacing, self.timeLabel.y - 10, 50, 40);
+    
+    self.sepaView.frame = CGRectMake(self.editButton.x - mainSpacing, self.editButton.y + 5, 1, 10);
+    
+    self.stateButton.frame = CGRectMake(self.sepaView.x - mainSpacing - 46, self.editButton.y, 50, 20);
+    [self.stateButton.titleLabel sizeToFit];
+    
+    self.timeButton.frame = CGRectMake(0, 0, self.headerView.width * 0.6, headerViewH * 0.4);
+    self.timeButton.center = self.headerView.center;
+}
+
+- (void)setH5CourseModel:(H5CourseModel *)h5CourseModel
+{
+    _h5CourseModel = h5CourseModel;
+    
+    [self.headerView sd_setImageWithURL:[NSURL URLWithString:h5CourseModel.headimgurl] placeholderImage:[UIImage imageNamed:@"common_no_image"]];
+    
+    self.titleLabel.text = h5CourseModel.title;
+    self.timeLabel.text = h5CourseModel.indate;
+    
+    [self.editButton setTitle:@"编辑" forState:UIControlStateNormal];
+    [self.editButton setTitleColor:GreenColor forState:UIControlStateNormal];
+    
+    [self.timeButton setTitle:h5CourseModel.showDuration forState:UIControlStateNormal];
+    
+    self.ccid = h5CourseModel.ccid;
+    
+    switch (h5CourseModel.status) {
+        case 6: //待发布
+            [self.stateButton setTitle:@"待发布" forState:UIControlStateNormal];
+            [self.stateButton setTitleColor:RGBColor(143,143,143) forState:UIControlStateNormal];
+            break;
+        case 2: //审核中
+        case 4:
+            [self.stateButton setTitle:@"审核中" forState:UIControlStateNormal];
+            [self.stateButton setTitleColor:RGBColor(143,143,143) forState:UIControlStateNormal];
+            break;
+        case 1: //已上线
+            [self.stateButton setTitle:@"已上线" forState:UIControlStateNormal];
+            [self.stateButton setTitleColor:RGBColor(143,143,143) forState:UIControlStateNormal];
+            break;
+        case 7: //未通过
+            [self.stateButton setTitle:@"未通过" forState:UIControlStateNormal];
+            [self.stateButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+
+            break;
+        case 8: //已下线
+            [self.stateButton setTitle:@"已下线" forState:UIControlStateNormal];
+            [self.stateButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+            break;
+        default:
+            break;
+    }
+    
+}
+
+#pragma mark 编辑按钮点击
+- (void) editClick
+{
+    if ([self.delegate respondsToSelector:@selector(editButtonClick:)]) {
+        [self.delegate editButtonClick:self];
+    }
+}
+
+@end

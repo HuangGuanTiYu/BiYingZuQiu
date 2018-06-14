@@ -1,0 +1,98 @@
+//
+//  MainNavigationController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/4/19.
+//
+//
+
+#import "MainNavigationController.h"
+#import "LoginController.h"
+#import "RegistController.h"
+#import "ForgetPwdController.h"
+#import "EditMessageController.h"
+#import "ReleaseStudyController.h"
+#import "MainWebController.h"
+#import "MyMessageController.h"
+#import "ExamineCommitController.h"
+
+@interface MainNavigationController ()
+
+@end
+
+@implementation MainNavigationController
+
+#pragma mark 项目生命周期中只执行一次
++ (void)initialize
+{
+    //tabBar主题 title文字属性
+    UITabBarItem *tabBarItem = [UITabBarItem appearance];
+    NSMutableDictionary *tabBarItemDict = [NSMutableDictionary dictionary];
+    tabBarItemDict[NSFontAttributeName] = [UIFont systemFontOfSize:12];
+    [tabBarItem setTitleTextAttributes:tabBarItemDict forState:UIControlStateNormal];
+    
+    NSMutableDictionary *tabBarItemDictSelect = [NSMutableDictionary dictionary];
+    tabBarItemDictSelect[NSForegroundColorAttributeName] = GreenColor;
+    tabBarItemDictSelect[NSFontAttributeName] = [UIFont systemFontOfSize:12];
+    [tabBarItem setTitleTextAttributes:tabBarItemDictSelect forState:UIControlStateSelected];
+    
+    //导航栏主题 title文字属性
+    UINavigationBar *navBar = [UINavigationBar appearance];
+    NSMutableDictionary *navBarDict = [NSMutableDictionary dictionary];
+    navBarDict[NSForegroundColorAttributeName] = [UIColor blackColor];
+    navBarDict[NSFontAttributeName] = [UIFont boldSystemFontOfSize:18];
+    [navBar setTitleTextAttributes:navBarDict];
+    
+    //导航栏左右文字主题
+    UIBarButtonItem *barButtonItem = [UIBarButtonItem appearance];
+    NSMutableDictionary *batButtonDict = [NSMutableDictionary dictionary];
+    batButtonDict[NSForegroundColorAttributeName] = [UIColor blackColor];
+    batButtonDict[NSFontAttributeName] = [UIFont systemFontOfSize:14];
+    [barButtonItem setTitleTextAttributes:batButtonDict forState:UIControlStateNormal];
+}
+
+/*
+ * viewController 需要跳转到的目标控制器
+ * animated 跳转时是否需要动画
+ */
+#pragma mark 拦截push方法
+- (void)pushViewController:(UIViewController *)viewController animated:(BOOL)animated
+{
+    if (![viewController isKindOfClass:[LoginController class]] && ![viewController isKindOfClass:[RegistController class]] && ![viewController isKindOfClass:[ForgetPwdController class]] && ![viewController isKindOfClass:[EditMessageController class]] && ![viewController isKindOfClass:[ReleaseStudyController class]] && ![viewController isKindOfClass:[MyMessageController class]] && ![viewController isKindOfClass:[ExamineCommitController class]]) {
+        viewController.view.backgroundColor = [UIColor whiteColor];
+    }
+    
+    
+    if (self.viewControllers.count > 0) {
+        viewController.navigationController.navigationBar.translucent = NO;
+        viewController.hidesBottomBarWhenPushed = YES;
+        
+        if (![viewController isKindOfClass:[MainWebController class]]) {
+            viewController.navigationItem.leftBarButtonItem = [UIBarButtonItem setRightNavigationBarBackGroundImgName:@"common_back" target:self selector:@selector(back)];
+        }
+    }
+    
+    [super pushViewController:viewController animated:animated];
+}
+
+#pragma mark 返回按钮点击
+- (void)back
+{
+    [self popViewControllerAnimated:YES];
+}
+
+- (BOOL)shouldAutorotate
+{
+    return NO;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
+{
+    return UIInterfaceOrientationPortrait;
+}
+
+@end

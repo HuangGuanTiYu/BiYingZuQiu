@@ -1,0 +1,46 @@
+//
+//  VideoModelTool.m
+//  MoveSchool
+//
+//  Created by edz on 2018/1/6.
+//
+
+#import "VideoModelTool.h"
+#import "VideoModel.h"
+
+#define recommendFilePath FilePathWithName(VideoModelName)
+
+@implementation VideoModelTool
+
+/**
+ *  保存音频信息
+ */
++ (void) saving : (VideoModel *) videoModel
+{
+    
+    NSMutableArray *array = [VideoModelTool videoModels];
+    if (array == nil) {
+        array = [NSMutableArray array];
+    }
+    [array insertObject:videoModel atIndex:0];
+    [NSKeyedArchiver archiveRootObject:array toFile:recommendFilePath];
+}
+
+/**
+ *  取出音频信息
+ */
++ (NSMutableArray *)videoModels
+{
+    return [NSKeyedUnarchiver unarchiveObjectWithFile:recommendFilePath];
+}
+
+/**
+ * 删除所有音频
+ */
++ (void) removeAllVideoModel
+{
+    
+    
+}
+
+@end

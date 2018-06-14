@@ -1,0 +1,21 @@
+//
+//  CutMusicController.h
+//  MoveSchool
+//
+//  Created by edz on 2017/12/22.
+//
+//
+
+#import <UIKit/UIKit.h>
+#import "AEAudioFilePlayer.h"
+
+@interface CutMusicController : UIViewController
+
+@property (nonatomic, copy) NSString *videoLength;
+
+@property (nonatomic, copy) NSString *videoPath;
+
+@property (nonatomic, strong) AEAudioController *audioController;
+
+
+@end

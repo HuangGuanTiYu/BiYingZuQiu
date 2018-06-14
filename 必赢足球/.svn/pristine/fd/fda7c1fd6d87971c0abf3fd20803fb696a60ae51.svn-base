@@ -1,0 +1,55 @@
+//
+//  MenusSubModel.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/11.
+//
+//
+
+#import "MenusSubModel.h"
+#import "MJExtension.h"
+#import "MenusSubModel.h"
+
+@implementation MenusSubModel
+
+MJCodingImplementation
+
+- (NSDictionary *)replacedKeyFromPropertyName{
+    return @{
+             @"ID" : @"id"
+             };
+}
+
+- (NSDictionary *)objectClassInArray
+{
+    return @{@"subs": [MenusSubModel class]};
+}
+
+- (void)setTitle:(NSString *)title
+{
+    _title = title;
+    
+    if (_ID == 10401) { //积分
+        NSString *allString = [NSString stringWithFormat:@"%@ %d",title,[UserInfoTool getUserInfo].coin];
+        NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:allString];
+        [string addAttribute:NSForegroundColorAttributeName value:MainTextColor range:[allString rangeOfString:[NSString stringWithFormat:@"%d",[UserInfoTool getUserInfo].coin]]];
+        [string addAttribute:NSForegroundColorAttributeName value:AuxiliaryColor range:[allString rangeOfString:[NSString stringWithFormat:@"%@",title]]];
+
+        _coinString = string;
+        
+    }else if(_ID == 10402) //证书
+    {
+        NSString *allString = [NSString stringWithFormat:@"%@ %d",title,[UserInfoTool getUserInfo].cert];
+        NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:allString];
+        [string addAttribute:NSForegroundColorAttributeName value:MainTextColor range:[allString rangeOfString:[NSString stringWithFormat:@"%d",[UserInfoTool getUserInfo].cert]]];
+        [string addAttribute:NSForegroundColorAttributeName value:AuxiliaryColor range:[allString rangeOfString:[NSString stringWithFormat:@"%@",title]]];
+        _certString = string;
+    }
+}
+
+- (void)setID:(int)ID
+{
+    _ID = ID;
+}
+
+@end

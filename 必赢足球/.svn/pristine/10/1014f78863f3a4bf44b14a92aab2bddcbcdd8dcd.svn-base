@@ -1,0 +1,56 @@
+//
+//  MineDataController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/18.
+//
+//
+
+#import "MineDataController.h"
+#import "MineDataCell.h"
+
+@interface MineDataController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) NSArray *titles;
+
+@end
+
+@implementation MineDataController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"个人资料";
+    
+    self.titles = @[@"头像",@"昵称",@"性别",@"手机号",@"邮箱",@"工号",@"部门",@"公司"];
+    
+    [self setUpUI];
+}
+
+- (void) setUpUI
+{
+
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return 8;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"MineDataCell";
+    MineDataCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[MineDataCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.title = self.titles[indexPath.row];
+    return cell;
+}
+
+@end

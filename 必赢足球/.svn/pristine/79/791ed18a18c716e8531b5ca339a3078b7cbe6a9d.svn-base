@@ -1,0 +1,139 @@
+//
+//  CompanyController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/7.
+//
+//
+
+#import "CompanyController.h"
+#import "AFNetWW.h"
+
+@interface CompanyController ()
+
+@property (nonatomic, strong) NSMutableArray *array;
+
+@end
+
+@implementation CompanyController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.array = [NSMutableArray array];
+    
+    self.title = @"企业管理员";
+    
+    [self setUpUI];
+}
+
+- (void) setUpUI
+{
+    for (int i = 0; i < 3; i ++) {
+        //职位
+        UIView *job = [[UIView alloc] initWithFrame:CGRectMake(15, 15 + i * 45, self.view.width - 30, 45)];
+        
+        UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 30, job.height)];
+        if (i == 0) {
+            titleLabel.text = @"职位";
+        }else if (i == 1)
+        {
+            titleLabel.text = @"部门";
+        }else if (i == 2)
+        {
+            titleLabel.text = @"公司";
+        }
+        
+        titleLabel.textColor = MainTextColor;
+        titleLabel.font = [UIFont systemFontOfSize:ys_28];
+        [job addSubview:titleLabel];
+        [titleLabel sizeToFit];
+        titleLabel.height = job.height;
+        
+        UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(CGRectGetMaxX(titleLabel.frame) + mainSpacing, 0, job.width - CGRectGetMaxX(titleLabel.frame) - 10, job.height)];
+        textField.centerY = titleLabel.centerY;
+        if (i == 0) {
+            textField.placeholder = @"请输入职位名称";
+        }else if (i == 1)
+        {
+            textField.placeholder = @"请输入部门名称";
+        }else if (i == 2)
+        {
+            textField.placeholder = @"请输入公司名称";
+        }
+        textField.font = [UIFont systemFontOfSize:ys_28];
+        [job addSubview:textField];
+        
+        [self.array addObject:textField];
+        
+        UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(titleLabel.x, job.height - 0.5, job.width + 15, 0.5)];
+        sepaView.backgroundColor = SepaViewColor;
+        [job addSubview:sepaView];
+        
+        [self.view addSubview:job];
+        
+        if (i == 2) {
+            //确定按钮
+            UIButton *applyButton = [[UIButton alloc] initWithFrame:CGRectMake(15, CGRectGetMaxY(job.frame) + 20, self.view.width - 30, 40)];
+            [applyButton addTarget:self action:@selector(applyButtonClick) forControlEvents:UIControlEventTouchUpInside];
+            applyButton.backgroundColor = MainColor;
+            [applyButton setTitle:@"确定" forState:UIControlStateNormal];
+            [applyButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+            applyButton.layer.cornerRadius = 5;
+            applyButton.layer.masksToBounds = YES;
+            applyButton.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+            [self.view addSubview:applyButton];
+        }
+    }
+
+}
+
+- (void) applyButtonClick
+{
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,ApplyCompany,[UserInfoTool getUserInfo].token];
+    
+    UITextField *job = [self.array firstObject];
+    if (job.text.length == 0) {
+        [MBProgressHUD showText:@"请输入职位名称" inview:[[UIApplication sharedApplication].windows lastObject]];
+        return;
+    }
+    
+    UITextField *translate = [self.array objectAtIndex:1];
+    if (translate.text.length == 0) {
+        [MBProgressHUD showText:@"请输入部门名称" inview:[[UIApplication sharedApplication].windows lastObject]];
+        return;
+    }
+    
+    UITextField *company = [self.array lastObject];
+    if (company.text.length == 0) {
+        [MBProgressHUD showText:@"请输入公司名称" inview:[[UIApplication sharedApplication].windows lastObject]];
+        return;
+    }
+    
+    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    dic[@"companyname"] = job.text;
+    dic[@"department"] = translate.text;
+    dic[@"position"] = company.text;
+    dic[@"from"] = @"2";
+
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        
+        int code = [responseDic[@"rescode"] intValue];
+        if (code == 10000) {
+            
+            [MBProgressHUD showText:@"正在为您申请中..." inview:[[UIApplication sharedApplication].windows lastObject]];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self dismissViewControllerAnimated:YES completion:nil];
+            });
+        }else
+        {
+            [MBProgressHUD showText:responseDic[@"msg"] inview:[[UIApplication sharedApplication].windows lastObject]];
+        }
+    } fail:^(NSError *error) {
+        
+    }];
+
+}
+
+@end

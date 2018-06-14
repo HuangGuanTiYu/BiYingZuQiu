@@ -1,0 +1,137 @@
+
+//  AFNetWW.m
+//  zhitongti
+//
+//  Created by yuhongtao on 16/7/27.
+//  Copyright © 2016年 caobohua. All rights reserved.
+
+//AFnetWorking简单的封装可以用
+
+#import "AFNetWW.h"
+#import "AFNetworking.h"
+#import "AppDelegate.h"
+#import "CourseProgressTool.h"
+#import "CourseProgresModel.h"
+
+@implementation AFNetWW
++ (AFNetWW *)sharedAFNetWorking
+{
+    static AFNetWW *sharedAccountManagerInstance = nil;
+    static dispatch_once_t predicate;
+    dispatch_once(&predicate, ^{
+        sharedAccountManagerInstance = [[self alloc] init];
+    });
+    return sharedAccountManagerInstance;
+}
+
+
+-(void)AFWithPostORGet:(NSString *)post withURLStr:(NSString *)url WithParameters:(NSDictionary *)parameters success:(void (^)(id responseDic))success fail:(void (^)(NSError *error))fail{
+    AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+    manager.requestSerializer = [AFJSONRequestSerializer serializer];
+    manager.responseSerializer = [AFJSONResponseSerializer serializer];
+    manager.responseSerializer.acceptableContentTypes =[NSSet setWithObjects:@"text/html",@"application/json",@"text/json",@"text/plain",nil];
+    manager.requestSerializer.timeoutInterval = 10;
+    
+    [manager.requestSerializer setValue:[UserInfoTool getUserInfo].token forHTTPHeaderField:@"token"];
+    [manager.requestSerializer setValue:zttapiver forHTTPHeaderField:@"zttapiver"];
+    [manager.requestSerializer setValue:appkey forHTTPHeaderField:@"appkey"];
+    [manager.requestSerializer setValue:[ManyLanguageMag getTypeWithWebDiscript] forHTTPHeaderField:@"Accept-Language"];
+
+    if ([post isEqualToString:@"get"]) {
+        [manager GET:url  parameters:nil  success:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+            if (success) {
+                success(responseObject);
+            }
+        }
+             failure:^(AFHTTPRequestOperation *operation, NSError *error){
+                 [self commitProgress];
+
+                 if (fail) {
+                     fail(error);
+                 }
+             }];
+        
+    }else if ([post isEqualToString:@"post"]){
+        
+        if (![url containsString:@"token="]) {
+            if ([UserInfoTool getUserInfo].token != nil) {
+                if ([url containsString:@"?"]) {
+                    url = [url stringByAppendingString:[NSString stringWithFormat:@"&token=%@",[UserInfoTool getUserInfo].token]];
+                }else
+                {
+                    url = [url stringByAppendingString:[NSString stringWithFormat:@"?token=%@",[UserInfoTool getUserInfo].token]];
+                }
+            }
+        }
+        
+        [manager POST:url parameters:parameters success:^(AFHTTPRequestOperation *operation, id responseObject) {
+            
+            //判断是否掉线
+            
+            NSInteger code=[responseObject[@"rescode"] integerValue];
+            
+            if (code == 20002) {
+                AppDelegate *delegate = (AppDelegate *)[UIApplication sharedApplication].delegate;
+                [delegate alertViewLogin];
+            }
+            [self commitProgress];
+
+            if (success) {
+                success(responseObject);
+            }
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            [self commitProgress];
+
+            if (fail) {
+                fail(error);
+            }
+        }];
+        
+    }else{
+        NSLog(@"封装方法简单，不支持");
+    }
+}
+
+#pragma mark 上传学习进度
+- (void) commitProgress
+{
+    //如果有学习进度没有上传的 上传学习进度
+    if ([CourseProgressTool progress].count > 0) {
+        for (CourseProgresModel *model in [CourseProgressTool progress]) {
+            NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,LearnRecord,[UserInfoTool getUserInfo].token];
+            
+            NSDictionary *dic=@{
+                                @"courseid" : model.courseid,
+                                @"learntime" : model.progres
+                                };
+            
+            [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+                int rescode = [responseDic[@"rescode"] intValue];
+                if (rescode == 10000) {
+                    [CourseProgressTool deleteProgress:model];
+                }
+            } fail:^(NSError *error) {
+                
+            }];
+        }
+    }
+
+}
+
+- (AFHTTPRequestOperationManager *) getAFNManager
+{
+    AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+    
+    manager.requestSerializer = [AFHTTPRequestSerializer serializer];
+    manager.responseSerializer = [AFHTTPResponseSerializer  serializer];
+    // 设置超时时间
+    [manager.requestSerializer willChangeValueForKey:@"timeoutInterval"];
+    manager.requestSerializer.timeoutInterval = 60;
+    [manager.requestSerializer didChangeValueForKey:@"timeoutInterval"];
+    
+    manager.responseSerializer.acceptableContentTypes =[NSSet setWithObjects:@"text/html",@"application/json",@"text/json",@"text/plain",nil];
+    return manager;
+}
+
+@end

@@ -1,0 +1,346 @@
+//
+//  StudyCircleFrame.m
+//  MoveSchool
+//
+//  Created by edz on 2017/5/8.
+//
+//
+
+#import "StudyCircleFrame.h"
+#import "StudyCircleModel.h"
+#import "NSAttributedString+Extension.h"
+#import "NSString+Extension.h"
+#import "NSDataEx.h"
+#import "StudyAttachs.h"
+#import "StudyReply.h"
+#import "EmotionTool.h"
+#import "NSDate+Extension.h"
+#import "StudyPraises.h"
+#import "MJExtension.h"
+
+//图片间距
+#define imageSpacint 4
+
+@implementation StudyCircleFrame
+
+MJCodingImplementation
+
+- (void)setStudyCircleModel:(StudyCircleModel *)studyCircleModel
+{
+    _studyCircleModel = studyCircleModel;
+    
+    _headerFrame = CGRectMake(mainSpacing, mainSpacing, 44, 44);
+    
+    // 昵称X
+    CGFloat namex = CGRectGetMaxX(_headerFrame) + mainSpacing;
+    CGSize size = [studyCircleModel.nickname returnStringRect:studyCircleModel.nickname size:CGSizeMake(SCREEN_WIDTH - namex - mainSpacing, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_28]];
+    _nameFrame = CGRectMake(namex, mainSpacing, size.width > SCREEN_WIDTH - namex - mainSpacing ? SCREEN_WIDTH - namex - mainSpacing : size.width, 20);
+    
+    //等级
+    NSString *lv = [NSString stringWithFormat:@"LV%ld",(long)studyCircleModel.userlv];
+    CGSize lvSize = [lv returnStringRect:lv size:CGSizeMake(SCREEN_WIDTH, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f20]];
+    _vipFrame = CGRectMake(CGRectGetMaxX(_headerFrame) - lvSize.width - 6, CGRectGetMaxY(_headerFrame) - 12, lvSize.width + 6, 12);
+    
+    //图片Y
+    CGFloat imageY = CGRectGetMaxY(_nameFrame) + mainSpacing;
+    
+    //内容
+    if (studyCircleModel.content.length > 0) {
+        
+        CGFloat contentW = SCREEN_WIDTH - namex - mainSpacing;
+        
+        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:[self base64DecodeString:studyCircleModel.content]];
+        
+        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+        [paragraphStyle setLineSpacing:LineSpacing];
+        [attributedString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, [[self base64DecodeString:studyCircleModel.content] length])];
+        
+        CGSize contentSize = [attributedString returnAttributedStringRect:attributedString size:CGSizeMake(contentW, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_28]];
+
+        _contentFrame = CGRectMake(namex, CGRectGetMaxY(_nameFrame) + 4, contentW, contentSize.height);
+        
+        //需要 展示全部内容
+        if (!self.needShowAllContent) {
+            UILabel *contentLabel = [[UILabel alloc] initWithFrame:_contentFrame];
+            contentLabel.attributedText = attributedString;
+            NSNumber *count = @((contentLabel.size.height + LineSpacing) / (contentLabel.font.lineHeight + LineSpacing));
+            
+            if ([count intValue] > 6) {
+                _isMoreThanSix = YES;
+                
+                _contentFrame = CGRectMake(namex, CGRectGetMaxY(_nameFrame) + 4, contentW, 6 * contentLabel.font.lineHeight + LineSpacing * 5);
+                
+                _allFrame = CGRectMake(namex, CGRectGetMaxY(_contentFrame) + mainSpacing, [@"全文" returnStringRect:@"全文" size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]].width, 20);
+                
+                imageY = CGRectGetMaxY(_allFrame) + mainSpacing;
+            }else
+            {
+                _isMoreThanSix = NO;
+                _allFrame = CGRectZero;
+                imageY = CGRectGetMaxY(_contentFrame) + mainSpacing;
+            }
+        }else
+        {
+            _isMoreThanSix = YES;
+            
+            _allFrame = CGRectMake(namex, CGRectGetMaxY(_contentFrame) + mainSpacing, [@"全文" returnStringRect:@"全文" size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]].width, 20);
+            
+            imageY = CGRectGetMaxY(_allFrame) + mainSpacing;
+        }
+    }
+    
+    //时间
+    CGFloat timeY = imageY;
+    
+    //图片
+    if (studyCircleModel.attachs.count > 0) {
+        //计算 图片宽高
+        CGFloat imageWH = ((SCREEN_WIDTH - namex * 1.5) - 2 * imageSpacint) / 3;
+        
+        //9张图片时的宽高
+        CGFloat nightWH = SCREEN_WIDTH - namex * 1.5;
+        
+        //只有一张图片 特殊处理
+        if (studyCircleModel.attachs.count == 1) {
+            _imagesFrame = CGRectMake(namex, imageY, nightWH * 0.5 , 2 * imageWH + imageSpacint);
+            
+            _oneImageFrame = CGRectMake(0, 0, _imagesFrame.size.width, _imagesFrame.size.height);
+        }else if(studyCircleModel.attachs.count != 4)
+        {
+            int count = (int)studyCircleModel.attachs.count;
+            CGFloat imageH = 0;
+            
+            if (count < 4) { // 一行
+                imageH = imageWH;
+            }else if(count < 7) // 二行
+            {
+                imageH = imageWH * 2 + imageSpacint;
+            }else //三行
+            {
+                imageH = imageWH * 3 + 2 * imageSpacint;
+            }
+            
+            _imagesFrame = CGRectMake(namex, imageY, count > 2 ? nightWH : imageWH * 2 + imageSpacint, imageH);
+            
+            _oneImageFrame = CGRectMake(0, 0, imageWH, imageWH);
+        }else //4张图片 特殊处理
+        {
+            _imagesFrame = CGRectMake(namex, imageY, imageWH * 2 + imageSpacint, imageWH * 2 + imageSpacint);
+            _oneImageFrame = CGRectMake(0, 0, imageWH, imageWH);
+        }
+        
+        timeY = CGRectGetMaxY(_imagesFrame) + mainSpacing;
+    }
+    
+    NSString *time = [[NSDate getDateByString:studyCircleModel.indate] timeIntervalDescription];
+    
+    CGFloat newTimeY = timeY;
+    
+    if (studyCircleModel.type == 3 || studyCircleModel.type == [shalongType intValue] || studyCircleModel.type == [courseType intValue] ) {
+        if (studyCircleModel.attachs.count > 0) {
+            StudyAttachs *attach = [studyCircleModel.attachs firstObject];
+            _describeFrame = CGRectMake(namex, timeY, [attach.title returnStringRect:attach.title size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]].width + mainSpacing, 20);
+            newTimeY = CGRectGetMaxY(_describeFrame) + mainSpacing;
+        }else
+        {
+            _describeFrame = CGRectZero;
+        }
+    }else
+    {
+        _describeFrame = CGRectZero;
+    }
+    
+    _timeFrame = CGRectMake(namex, newTimeY, [time returnStringRect:time size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]].width + mainSpacing, 20);
+    
+    //自己发布
+    if (studyCircleModel.isself == 1) {
+        CGSize size = [@"删除" returnStringRect:@"删除" size:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]];
+        _deleteFrame = CGRectMake(CGRectGetMaxX(_timeFrame), _timeFrame.origin.y, size.width, size.height);
+    }else
+    {
+        _deleteFrame = CGRectZero;
+    }
+    
+    CGFloat commentButtonY = 0;
+    if (14 - _timeFrame.size.height > 0) {
+        commentButtonY = _timeFrame.origin.y - (14 - _timeFrame.size.height) * 0.5;
+    }else
+    {
+        commentButtonY = _timeFrame.origin.y + (_timeFrame.size.height - 14) * 0.5;
+    }
+    
+    _commentButtonFrame = CGRectMake(SCREEN_WIDTH - 19 - mainSpacing, commentButtonY, 14, 14);
+    
+    _commentAlertFrame = CGRectMake(_commentButtonFrame.origin.x, commentButtonY - _commentButtonFrame.size.height * 0.7, 0, _commentButtonFrame.size.height * 2.5);
+    
+    _alertGoodFrame = CGRectMake(0, 0, ReplyWidth * 0.5, _commentAlertFrame.size.height);
+    
+    _alertReplyFrame = CGRectMake(ReplyWidth * 0.5, 0, ReplyWidth * 0.5, _commentAlertFrame.size.height);
+    
+    _alertSepaViewFrame = CGRectMake(ReplyWidth * 0.5 - 0.25, _commentAlertFrame.size.height * 0.4 * 0.5, 0.5, _commentAlertFrame.size.height * 0.6);
+    
+    //赞👍
+    if (studyCircleModel.praises.count > 0) {
+        NSMutableString *praiseContent = [NSMutableString string];
+        for (StudyPraises *praise in studyCircleModel.praises) {
+            [praiseContent appendString:[NSString stringWithFormat:@"%@，",praise.nickname]];
+        }
+        
+        if ([praiseContent containsString:@"，"]) {
+            praiseContent = (NSMutableString *)[praiseContent substringToIndex:praiseContent.length - 1];
+        }
+        
+        NSMutableAttributedString *praiseAttribute = [[NSMutableAttributedString alloc] initWithString:praiseContent];
+
+        //图片名称
+        NSTextAttachment *textAttach = [[NSTextAttachment alloc] init];
+        textAttach.bounds = CGRectMake(0, -2, 14, 14);
+        textAttach.image = [UIImage imageNamed:@"frends_subpraise_h"];
+        
+        //把附件转换成可变字符串，用于替换掉源字符串中的表情文字
+        NSAttributedString *imageStr = [NSAttributedString attributedStringWithAttachment:textAttach];
+        
+        [praiseAttribute insertAttributedString:imageStr atIndex:0];
+        
+        self.praiseAttribute = praiseAttribute;
+        
+        CGSize size = [praiseAttribute returnAttributedStringRect:praiseAttribute size:CGSizeMake(SCREEN_WIDTH - mainSpacing - namex, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]];
+        _praiseListFrame = CGRectMake(namex + 5, CGRectGetMaxY(_timeFrame) + 1.5 * mainSpacing + mainSpacing * 0.5, SCREEN_WIDTH - mainSpacing - namex - 5, size.height);
+        
+        _cellHeight = CGRectGetMaxY(_praiseListFrame) + mainSpacing;
+
+    }else
+    {
+        _praiseListFrame = CGRectZero;
+        _cellHeight = CGRectGetMaxY(_timeFrame) + mainSpacing;
+    }
+
+    //评论
+    if (studyCircleModel.replys.count > 0) {
+        
+        self.commentsF = [NSMutableArray array];
+        
+        CGFloat replyLabelX = namex;
+        
+        for (int i = 0; i < [studyCircleModel.replys count]; i++) {
+            StudyReply *reply = studyCircleModel.replys[i];
+            
+            //内容
+            NSString *content = @"";
+            
+            //有回复
+            if (reply.touserid > 0) {
+                content = [NSString stringWithFormat:@"%@回复%@：%@",reply.nickname,reply.tonickname,[self base64DecodeString:reply.content]];
+            }else
+            {
+                content = [NSString stringWithFormat:@"%@：%@",reply.nickname,[self base64DecodeString:reply.content]];
+            }
+            
+            //正则表达式
+            NSString * pattern = @"\\[[a-zA-Z0-9\\u4e00-\\u9fa5]+\\]";
+            NSError *error = nil;
+            NSRegularExpression * re = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:&error];
+            
+            //通过正则表达式来匹配字符串
+            NSArray *resultArray = [re matchesInString:content options:0 range:NSMakeRange(0, content.length)];
+            
+            //用来存放字典，字典中存储的是图片和图片对应的位置
+            NSMutableArray *imageArray = [NSMutableArray arrayWithCapacity:resultArray.count];
+            
+            for (NSInteger i = 0; i  < [resultArray count]; ++i) {
+                NSTextCheckingResult *result = resultArray[i];
+                NSRange range =  [result range];
+                
+                NSMutableDictionary *imageDic = [NSMutableDictionary dictionaryWithCapacity:2];
+                NSString *subStr = [content substringWithRange:range];
+                
+                //图片名称
+                NSString *imageName = [EmotionTool imageNameWithString:subStr];
+                
+                NSTextAttachment *textAttach = [[NSTextAttachment alloc] init];
+                textAttach.bounds = CGRectMake(0, -2, 14, 14);
+                textAttach.image = [UIImage imageNamed:imageName];
+                
+                //把附件转换成可变字符串，用于替换掉源字符串中的表情文字
+                NSAttributedString *imageStr = [NSAttributedString attributedStringWithAttachment:textAttach];
+                
+                [imageDic setObject:imageStr forKey:@"image"];
+                [imageDic setObject:[NSValue valueWithRange:range] forKey:@"range"];
+                [imageArray addObject:imageDic];
+            }
+            
+            NSMutableAttributedString *attributeString = [[NSMutableAttributedString alloc] initWithString:content];
+            
+            for (NSInteger i = [imageArray count]-1; i >= 0; i--) {
+                NSDictionary *dic = imageArray[i];
+                NSRange range = [dic[@"range"] rangeValue];
+                [attributeString replaceCharactersInRange:range withAttributedString:dic[@"image"]];
+            }
+            
+            reply.replyString = attributeString;
+                        
+            CGSize replyLabelSize = [attributeString returnAttributedStringRect:attributeString size:CGSizeMake(SCREEN_WIDTH - mainSpacing - namex, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]];
+            
+            CGFloat replyLabelY = _cellHeight;
+            CGFloat replyLabelWidth = replyLabelSize.width;
+            CGFloat replyLabelHeight = replyLabelSize.height + 5;
+            _cellHeight += replyLabelHeight;
+            CGRect replyF = CGRectMake(replyLabelX, replyLabelY, replyLabelWidth, replyLabelHeight);
+            [self.commentsF addObject:[NSValue valueWithCGRect:replyF]];
+        }
+        
+        //评论的背景
+        _cellHeight = CGRectGetMaxY([(NSValue *)[self.commentsF lastObject] CGRectValue]) + mainSpacing + 1;
+        
+        CGFloat replyBackgroundWidth = SCREEN_WIDTH - mainSpacing - namex;
+        CGFloat replyBackgroundHeight = self.cellHeight - mainSpacing * 2 - CGRectGetMaxY(_timeFrame);
+
+        //有赞 有评论
+        if (studyCircleModel.praises.count > 0) {
+            _commentViewBjFrame = CGRectMake(namex, CGRectGetMaxY(_timeFrame) + 5, replyBackgroundWidth, replyBackgroundHeight + 3);
+
+            _commentViewFrame = CGRectMake(namex, CGRectGetMaxY(_praiseListFrame) + mainSpacing * 0.5 + 2, replyBackgroundWidth, replyBackgroundHeight);
+        }else //只有评论
+        {
+            _commentViewBjFrame = CGRectMake(namex, CGRectGetMaxY(_timeFrame) + 5, replyBackgroundWidth, replyBackgroundHeight + mainSpacing+ 1);
+
+            _commentViewFrame = CGRectMake(namex, CGRectGetMaxY(_timeFrame) + 1.5 * mainSpacing, replyBackgroundWidth, replyBackgroundHeight);
+            
+            _cellHeight = _cellHeight + mainSpacing * 0.5;
+
+        }
+    }else if(studyCircleModel.praises.count > 0) //只有赞
+    {
+        CGFloat replyBackgroundWidth = SCREEN_WIDTH - mainSpacing - namex;
+        
+        _commentViewBjFrame = CGRectMake(namex, CGRectGetMaxY(_timeFrame) + 5, replyBackgroundWidth, _praiseListFrame.size.height + mainSpacing * 2 + 1);
+        
+        _commentViewFrame = CGRectZero;
+        
+        _cellHeight = _cellHeight + mainSpacing * 0.5;
+        
+    }else
+    {
+        _commentViewBjFrame = CGRectZero;
+        _commentViewFrame = CGRectZero;
+    }
+
+    _cellSepaViewFrame = CGRectMake(0, _cellHeight - 0.5, SCREEN_WIDTH, 0.5);
+}
+
+-(NSString *)base64DecodeString:(NSString *)string
+
+{
+    //1.将base64编码后的字符串『解码』为二进制数据
+    NSData *data = [NSData dataWithBase64EncodedString:string];
+    
+    //2.把二进制数据转换为字符串返回
+    return [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+}
+
+- (void) reloadData
+{
+    [self setStudyCircleModel:self.studyCircleModel];
+}
+
+@end

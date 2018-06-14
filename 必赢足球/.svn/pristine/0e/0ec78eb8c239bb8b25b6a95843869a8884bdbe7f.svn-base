@@ -1,0 +1,186 @@
+//
+//  TeacherListCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/23.
+//
+//
+
+#import "TeacherListCell.h"
+#import "UIImageView+WebCache.h"
+#import "TeacherListModel.h"
+
+@interface TeacherListCell()
+
+//头像
+@property (nonatomic, strong) UIImageView *headerImage;
+
+//右侧View
+@property (nonatomic, strong) UIView *rigthView;
+
+//名字+描述
+@property (nonatomic, strong) UILabel *nameLabel;
+
+//粉丝数
+@property (nonatomic, strong) UILabel *fansCountLabel;
+
+//标签工具条
+@property (nonatomic, strong) UIView *tagView;
+
+//资讯标签
+@property (nonatomic, strong) UILabel *newsLabel;
+
+//课程标签
+@property (nonatomic, strong) UILabel *courseLable;
+
+//直播标签
+@property (nonatomic, strong) UILabel *liveLable;
+
+@end
+
+@implementation TeacherListCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+     
+        self.headerImage = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerImage];
+        
+        self.rigthView = [[UIView alloc] init];
+        [self.contentView addSubview:self.rigthView];
+        
+        self.nameLabel = [[UILabel alloc] init];
+        self.nameLabel.font = [UIFont systemFontOfSize:ys_f30];
+        self.nameLabel.textColor = MainTextColor;
+        [self.rigthView addSubview:self.nameLabel];
+        
+        self.fansCountLabel = [[UILabel alloc] init];
+        self.fansCountLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.fansCountLabel.textColor = AuxiliaryColor;
+        [self.rigthView addSubview:self.fansCountLabel];
+
+        self.tagView = [[UIView alloc] init];
+        [self.rigthView addSubview:self.tagView];
+        
+        self.newsLabel = [[UILabel alloc] init];
+        self.newsLabel.backgroundColor = RGBCOLOR(255,153,96);
+        self.newsLabel.hidden = YES;
+        [self.tagView addSubview:self.newsLabel];
+        
+        self.courseLable = [[UILabel alloc] init];
+        self.courseLable.backgroundColor = RGBCOLOR(215, 177, 118);
+        self.courseLable.hidden = YES;
+        [self.tagView addSubview:self.courseLable];
+        
+        self.liveLable = [[UILabel alloc] init];
+        self.liveLable.backgroundColor = RGBColor(219,157,149);
+        self.liveLable.hidden = YES;
+        [self.tagView addSubview:self.liveLable];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.headerImage.frame = CGRectMake(15, 0, 47, 47);
+    self.headerImage.centerY = self.contentView.height * 0.5;
+    self.headerImage.layer.cornerRadius = self.headerImage.width * 0.5;
+    self.headerImage.layer.masksToBounds = YES;
+    
+    CGFloat rightViewX = CGRectGetMaxX(self.headerImage.frame) + 15;
+    self.rigthView.frame = CGRectMake(rightViewX, self.headerImage.y, self.contentView.width - rightViewX - 15, self.contentView.height - self.headerImage.y);
+    
+    self.nameLabel.frame = CGRectMake(0, 0, 0, 30);
+    [self.nameLabel sizeToFit];
+    self.nameLabel.width = self.rigthView.width;
+    
+    self.fansCountLabel.frame = CGRectMake(0, CGRectGetMaxY(self.nameLabel.frame) + 6, self.nameLabel.width, 20);
+    [self.fansCountLabel sizeToFit];
+    
+    self.tagView.frame = CGRectMake(0, CGRectGetMaxY(self.fansCountLabel.frame), self.nameLabel.width, self.rigthView.height - CGRectGetMaxY(self.fansCountLabel.frame));
+    
+    self.newsLabel.frame = CGRectMake(0, 0, 0, 17);
+    self.newsLabel.centerY = self.tagView.height * 0.5;
+    
+    self.courseLable.frame = CGRectMake(0, 0, 0, 17);
+    self.courseLable.centerY = self.tagView.height * 0.5;
+    
+    self.liveLable.frame = CGRectMake(0, 0, 0, 17);
+    self.liveLable.centerY = self.tagView.height * 0.5;
+    
+    self.newsLabel.font = self.courseLable.font = self.liveLable.font = [UIFont systemFontOfSize:ys_f24];
+    
+    self.newsLabel.textColor = self.courseLable.textColor = self.liveLable.textColor = [UIColor whiteColor];
+    
+    [self.newsLabel sizeToFit];
+    [self.courseLable sizeToFit];
+    [self.liveLable sizeToFit];
+    
+    self.newsLabel.width = self.courseLable.width = self.liveLable.width = 50;
+    self.newsLabel.textAlignment = self.courseLable.textAlignment = self.liveLable.textAlignment = NSTextAlignmentCenter;
+
+    self.newsLabel.layer.cornerRadius = self.courseLable.layer.cornerRadius = self.liveLable.layer.cornerRadius = fillet;
+    
+    self.newsLabel.layer.masksToBounds = self.courseLable.layer.masksToBounds = self.liveLable.layer.masksToBounds = YES;
+    
+    self.courseLable.x = [self.model.newsCount intValue] > 0 ? CGRectGetMaxX(self.newsLabel.frame) + mainSpacing : 0;
+    
+    self.liveLable.x = [self.model.courseCount intValue] > 0 ? CGRectGetMaxX(self.courseLable.frame) + mainSpacing : 0;
+
+    
+}
+
+- (void)setModel:(TeacherListModel *)model
+{
+    _model = model;
+    
+    [self.headerImage sd_setImageWithURL:[NSURL URLWithString:model.teacherpic] placeholderImage:[UIImage imageNamed:@""]];
+    
+    NSString *name = self.model.nickname;
+    
+    if (self.model.applyjob.length > 0) {
+        name = [NSString stringWithFormat:@"%@ | %@",self.model.nickname,self.model.applyjob];
+    }
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:name];
+    [string addAttribute:NSForegroundColorAttributeName value:MainColor range:[name rangeOfString:self.model.nickname]];
+    self.nameLabel.attributedText = string;
+    
+    self.fansCountLabel.text = [NSString stringWithFormat:@"粉丝数：%@",model.friendsCount];
+    
+    if ([model.newsCount intValue] > 0) {
+        self.newsLabel.hidden = NO;
+        self.newsLabel.text = [NSString stringWithFormat:@"资讯%@",model.newsCount];
+        self.newsLabel.width = 50;
+    }else
+    {
+        self.newsLabel.hidden = YES;
+        self.newsLabel.text = @"";
+        self.newsLabel.width = 0;
+    }
+    
+    if ([model.courseCount intValue] > 0) {
+        self.courseLable.hidden = NO;
+        self.courseLable.text = [NSString stringWithFormat:@"课程%@",model.courseCount];
+    }else
+    {
+        self.courseLable.hidden = YES;
+        self.courseLable.text = @"";
+    }
+    
+    if ([model.liveCount intValue] > 0) {
+        self.liveLable.hidden = NO;
+        self.liveLable.text = [NSString stringWithFormat:@"直播%@",model.liveCount];
+    }else
+    {
+        self.liveLable.hidden = YES;
+        self.liveLable.text = @"";
+    }
+    
+}
+
+@end

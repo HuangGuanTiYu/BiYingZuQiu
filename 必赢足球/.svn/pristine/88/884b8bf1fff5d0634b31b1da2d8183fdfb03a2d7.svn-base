@@ -1,0 +1,138 @@
+//
+//  UploadListController.m
+//  MoveSchool
+//
+//  Created by edz on 2018/1/5.
+//
+
+#import "UploadListController.h"
+#import "VideoCell.h"
+#import "VideoModelTool.h"
+#import "VideoModel.h"
+#import "AFNetWW.h"
+#import "NewH5CourseController.h"
+
+@interface UploadListController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, strong) NSMutableArray *datas;
+
+@end
+
+@implementation UploadListController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.title = @"上传列表";
+    
+    self.datas = [VideoModelTool videoModels];
+    
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.backgroundColor = ViewBackColor;
+    self.tableView = tableView;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    tableView.tableFooterView = [[UIView alloc] init];
+    
+    [self setUpData];
+    
+    if (self.videoPath.length > 0) {
+        [self uploadVideo];
+    }
+}
+
+#pragma mark 上传视频
+- (void) uploadVideo
+{
+    
+    NSString *header = [MainUserDefaults objectForKey:FileServerUrl];
+    NSString *url = [NSString stringWithFormat:@"%@/%@?token=%@",header,UploadVoice,[UserInfoTool getUserInfo].token];
+    
+    __weak typeof(self) weak_self = self;
+    
+    AFHTTPRequestOperationManager *manager = [[AFNetWW sharedAFNetWorking] getAFNManager];
+    
+    NSData *voiceData = [NSData dataWithContentsOfFile:self.videoPath];
+    
+    [manager POST:url parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+        [formData appendPartWithFileData:voiceData name:@"file" fileName:[weak_self.videoPath lastPathComponent] mimeType:@"application/octet-stream;charset=utf-8"];
+    } success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        
+        //            NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:responseObject
+        //                                                                options:NSJSONReadingMutableContainers
+        //                                                                  error:nil];
+        //            NSString *header = [MainUserDefaults objectForKey:FileServerUrl];
+        //            MainWebController *webVc = [[MainWebController alloc] init];
+        //            webVc.url = [NSString stringWithFormat:@"%@%@?id=%@",header,VdieoH5course,dic[@"id"]];
+        //            webVc.webTitle = @"我的音频";
+        //            [self stopCH1Playthrough];
+        //            [MBProgressHUD hideHUDForView:[UIApplication sharedApplication].keyWindow];
+        //
+        //            [self.navigationController pushViewController:webVc animated:YES];
+        
+        [MBProgressHUD showSuccess:@"上传成功"];
+        
+        if ([[NSFileManager defaultManager] fileExistsAtPath:self.videoPath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:self.videoPath error:nil];
+            self.videoPath = nil;
+            [VideoModelTool removeVideoModel:self.model];
+        }
+        
+        for (UIViewController *controller in self.navigationController.viewControllers) {
+            if ([controller isKindOfClass:[NewH5CourseController class]]) {
+                NewH5CourseController *A =(NewH5CourseController *)controller;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.navigationController popToViewController:A animated:YES];
+                });
+            }
+        }
+        
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        [MBProgressHUD hideHUDForView:[UIApplication sharedApplication].keyWindow];
+        [MBProgressHUD showError:@"上传失败"];
+        
+        self.model.uploadFaile = YES;
+        [VideoModelTool updateVideoModel:self.model];
+        
+    }];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.datas.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    static NSString *ID = @"VideoCell";
+    VideoCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[VideoCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.model = self.datas[indexPath.row];
+    return cell;
+}
+
+- (void) setUpData
+{
+    
+    
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    VideoModel *model = self.datas[indexPath.row];
+    if (model.uploadFaile) {
+        return 125 + 44;
+    }
+    return 125;
+}
+
+@end

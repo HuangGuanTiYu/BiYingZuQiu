@@ -1,0 +1,12 @@
+//
+//  UploadListController.h
+//  MoveSchool
+//
+//  Created by edz on 2018/1/5.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface UploadListController : UIViewController
+
+@end

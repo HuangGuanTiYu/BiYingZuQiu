@@ -1,0 +1,13 @@
+//
+//  InformationListModel.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/21.
+//
+//
+
+#import "InformationListModel.h"
+
+@implementation InformationListModel
+
+@end

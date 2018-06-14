@@ -1,0 +1,791 @@
+//
+//  StudyCircleController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/5/6.
+//
+//
+
+#import "StudyCircleController.h"
+#import "StudyCircleModel.h"
+#import "AFNetWW.h"
+#import "StudyCircleModel.h"
+#import "MJExtension.h"
+#import "StudyCircleFrame.h"
+#import "StudyCircleCell.h"
+#import "XLPhotoBrowser.h"
+#import "MJRefresh.h"
+#import "StudyPraises.h"
+#import "ChatKeyBoard.h"
+#import "AllTitleButton.h"
+#import "FaceSourceManager.h"
+#import "MainNavigationController.h"
+#import "NewLoginController.h"
+#import "NSString+Extension.h"
+#import "StudyReply.h"
+#import "IQKeyboardManager.h"
+#import "StudyReplyCell.h"
+#import "ReleaseStudyController.h"
+#import "FriendInfoShowHotViewController.h"
+#import "StudyFrameTool.h"
+#import "Reachability.h"
+#import "CourseDetailArrayModel.h"
+#import "CourseDetailModel.h"
+#import "CourseDetailController.h"
+#import "MainWebController.h"
+#import "MianTabBarController.h"
+#import "NewCourseDetailController.h"
+
+@interface StudyCircleController ()<UITableViewDelegate, UITableViewDataSource, StudyCircleCellDelegate,ChatKeyBoardDataSource, ChatKeyBoardDelegate,UIGestureRecognizerDelegate,ReleaseStudyControllerDelegate>
+
+@property(nonatomic, weak) UITableView *tableView;
+
+//数据数组
+@property(nonatomic, strong) NSMutableArray *dataArray;
+
+/**
+ * 图片数组
+ */
+@property (nonatomic, strong) NSArray *imageViewArray;
+
+//是否是加载更多
+@property(nonatomic, assign) BOOL isMoreData;
+
+//页数
+@property(nonatomic, assign) int index;
+
+//上一次点击的评论和赞按钮
+@property(nonatomic, strong) StudyCircleCell *selectedCell;
+
+//评论点击的cell
+@property(nonatomic, strong) StudyCircleCell *replyClickCell;
+
+//评论点击的 cid
+@property(nonatomic, strong) StudyCircleModel *studyCircleModel;
+
+@property (nonatomic, strong) ChatKeyBoard *chatKeyBoard;
+
+//用户缓存的数组
+@property(nonatomic, strong) NSMutableArray *cacheStudys;
+
+@end
+
+@implementation StudyCircleController
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [IQKeyboardManager sharedManager].shouldResignOnTouchOutside = NO;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = NO;
+    
+    if (self.chatKeyBoard != nil) {
+        [self.chatKeyBoard addNotification];
+    }
+
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [IQKeyboardManager sharedManager].shouldResignOnTouchOutside = YES;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = YES;
+
+    if (self.chatKeyBoard != nil) {
+        [self.chatKeyBoard deleteNofication];
+    }
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.dataArray = [NSMutableArray array];
+    
+    self.cacheStudys = [NSMutableArray array];
+    
+    [self setUpUI];
+    
+    //判断是否有网络
+    Reachability*reach=[Reachability reachabilityWithHostName:@"www.hcios.com"];
+    
+    //2.判断当前的网络状态
+    if ([reach currentReachabilityStatus] == ReachableViaWWAN || [reach currentReachabilityStatus] == ReachableViaWiFi) {
+        [self getData];
+    }else
+    {
+        //无网状态不能上拉加载更多
+        self.tableView.mj_footer = nil;
+        
+        //判断是否有缓存数据
+        if ([StudyFrameTool getStudyCircleArray].count > 0) {
+            
+            NSMutableArray *frameArray = [NSMutableArray array];
+            NSArray *modelArray = [StudyFrameTool getStudyCircleArray];
+            for (StudyCircleModel *model in modelArray) {
+                StudyCircleFrame *modelFrame = [[StudyCircleFrame alloc] init];
+                modelFrame.studyCircleModel = model;
+                [frameArray addObject:modelFrame];
+            }
+            self.dataArray = frameArray;
+            [self.tableView reloadData];
+        }
+    }
+    
+    //登录成功 刷新数据
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getData) name:@"HAVEPUSH" object:nil];
+
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardWillShowFrame:) name:UIKeyboardWillShowNotification object:nil];
+
+}
+
+- (void)keyBoardWillShowFrame:(NSNotification *)notification
+{
+    CGRect rectInTableView = [self.tableView rectForRowAtIndexPath:[self.tableView indexPathForCell:self.replyClickCell]];
+    CGFloat currentY = rectInTableView.origin.y - self.tableView.contentOffset.y;
+    CGFloat currentBoomY = currentY + self.replyClickCell.height;
+    
+    
+    if (currentBoomY < self.chatKeyBoard.y) {
+ 
+        //如果 滑动之后 tableview整体下移了 返回
+        if (currentBoomY - self.chatKeyBoard.y + self.tableView.contentOffset.y < 0) {
+            return;
+        }
+        
+        self.tableView.contentOffset = CGPointMake(0, currentBoomY - self.chatKeyBoard.y + self.tableView.contentOffset.y);        
+    }else
+    {
+        self.tableView.contentOffset = CGPointMake(0, currentBoomY - self.chatKeyBoard.y + self.tableView.contentOffset.y);
+    }
+}
+
+
+- (NSString *)titleForPagerTabStripViewController:(XLPagerTabStripViewController *)pagerTabStripViewController
+{
+    return self.studyTitle;
+}
+
+- (void) setUpUI
+{
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.showsVerticalScrollIndicator = NO;
+    tableView.height = self.view.height - 49;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    self.tableView = tableView;
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    [self.view addSubview:tableView];
+    
+    __weak __typeof(self) weakSelf = self;
+    
+    //下拉刷新
+    tableView.mj_header = [MJRefreshNormalHeader headerWithRefreshingBlock:^{
+        weakSelf.isMoreData = NO;
+        weakSelf.index = 0;
+        [weakSelf getData];
+    }];
+    
+    
+    //上拉加载更多 设置回调（一旦进入刷新状态就会调用这个refreshingBlock）
+    tableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+        weakSelf.isMoreData = YES;
+        ++weakSelf.index;
+        [weakSelf getData];
+    }];
+    
+    self.chatKeyBoard = [ChatKeyBoard keyBoardWithNavgationBarTranslucent:NO];
+    
+    self.chatKeyBoard.keyBoardStyle = KeyBoardStyleComment;
+    self.chatKeyBoard.delegate = self;
+    self.chatKeyBoard.dataSource = self;
+    self.chatKeyBoard.allowVoice = NO;
+    self.chatKeyBoard.allowMore = NO;
+    self.chatKeyBoard.allowSwitchBar = NO;
+    self.chatKeyBoard.backgroundColor = RGBCOLOR(250, 250, 250);
+    self.chatKeyBoard.placeHolder = @"评论";
+    
+    [self.view addSubview:self.chatKeyBoard];
+    
+    UIButton *camera = [[UIButton alloc] initWithFrame:CGRectMake(self.view.width - 35 - mainSpacing, self.view.height - 49 - 35 - 64 - mainSpacing, 35, 35)];
+    [camera addTarget:self action:@selector(releaseStudyClick) forControlEvents:UIControlEventTouchUpInside];
+    [camera setImage:[UIImage imageNamed:@"hudong_fabu"] forState:UIControlStateNormal];
+    [self.view addSubview:camera];
+}
+
+#pragma mark 获取数据
+- (void) getData
+{
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,StudyCircleList,[UserInfoTool getUserInfo].token];
+
+    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    dic[@"index"] = @(self.index);
+    dic[@"count"] = @"10";
+    dic[@"oneself"] = @"0";
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        
+        int code = [responseDic[@"rescode"] intValue];
+        if (code == 10000) {
+            
+            NSMutableArray *studys = (NSMutableArray *)[StudyCircleModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            
+            NSMutableArray *frameArray = [NSMutableArray array];
+            if (studys.count > 0) {
+                for (StudyCircleModel *model in studys) {
+                    StudyCircleFrame *modelFrame = [[StudyCircleFrame alloc] init];
+                    modelFrame.studyCircleModel = model;
+                    [frameArray addObject:modelFrame];
+                }
+            }else if(self.isMoreData)
+            {
+                --self.index;
+                [MBProgressHUD showError:@"已加载全部数据"];
+                [self.tableView.mj_header endRefreshing];
+                [self.tableView.mj_footer endRefreshing];
+                return ;
+            }
+            
+            if (self.isMoreData) {
+                [self.cacheStudys addObjectsFromArray:studys];
+                [self.dataArray addObjectsFromArray:frameArray];
+            }else
+            {
+                if (self.tableView.mj_footer == nil) {
+                    __weak __typeof(self) weakSelf = self;
+                    //上拉加载更多 设置回调（一旦进入刷新状态就会调用这个refreshingBlock）
+                    self.tableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+                        weakSelf.isMoreData = YES;
+                        ++weakSelf.index;
+                        [weakSelf getData];
+                    }];
+                }
+                self.cacheStudys = (NSMutableArray *)studys;
+                self.dataArray = frameArray;
+            }
+            
+            //缓存
+            if (studys.count <= 100) {
+                [StudyFrameTool saveStudy:(NSMutableArray *)self.cacheStudys];
+            }else if(self.dataArray.count > 100)
+            {
+                [StudyFrameTool saveStudy:(NSMutableArray *)[self.cacheStudys subarrayWithRange:NSMakeRange(0, 100)]];
+            }
+            
+            [self.tableView reloadData];
+            
+        }else
+        {
+            if ([UserInfoTool isLogin]) {
+                [MBProgressHUD showError:responseDic[@"msg"]];
+            }
+        }
+        
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+
+    } fail:^(NSError *error) {
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+        [MBProgressHUD showError:@"发送请求失败"];
+    }];
+
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.dataArray.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+
+    static NSString *ID = @"cell";
+    StudyCircleCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[StudyCircleCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.tag = indexPath.row;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    cell.delegate = self;
+    StudyCircleFrame *studyCircleFrame = self.dataArray[indexPath.row];
+    cell.studyCircleFrame = studyCircleFrame;
+    return cell;
+
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    StudyCircleFrame *studyCircleFrame = self.dataArray[indexPath.row];
+    return studyCircleFrame.cellHeight;
+}
+
+#pragma mark 全文 + 收起点击
+- (void)allButtonClick:(AllTitleButton *)allButton cell:(StudyCircleCell *)cell
+{
+    [self.chatKeyBoard keyboardDownForComment];
+
+    [self closeReplyAlertView];
+    
+    StudyCircleFrame *studyCircleFrame = self.dataArray[cell.tag];
+    
+    if ([allButton.titleLabel.text isEqualToString:@"收起"]) {
+        studyCircleFrame.needShowAllContent = YES;
+    }else
+    {
+        studyCircleFrame.needShowAllContent = NO;
+    }
+    
+    [studyCircleFrame reloadData];
+    [self.tableView reloadData];
+
+}
+
+#pragma mark - XLPhotoBrowserDatasource
+
+- (UIImage *)photoBrowser:(XLPhotoBrowser *)browser placeholderImageForIndex:(NSInteger)index
+{
+    UIImageView *imageView = self.imageViewArray[index];
+    return imageView.image;
+}
+
+- (UIView *)photoBrowser:(XLPhotoBrowser *)browser sourceImageViewForIndex:(NSInteger)index
+{
+    return self.imageViewArray[index];
+}
+
+#pragma mark - XLPhotoBrowserDelegate
+- (void)photoBrowser:(XLPhotoBrowser *)browser clickActionSheetIndex:(NSInteger)actionSheetindex currentImageIndex:(NSInteger)currentImageIndex
+{
+    switch (actionSheetindex) {
+        case 0: // 保存
+        {
+            [browser saveCurrentShowImage];
+            break;
+        }
+    }
+}
+
+/**
+ * 图片点击浏览
+ * imageUrls imageView数组
+ * 当前点击的索引值
+ */
+#pragma mark 图片点击浏览
+- (void) imageClick : (NSUInteger) imageCount index : (NSInteger) index currentImageView : (NSArray *) imageViewArray
+{
+    self.imageViewArray = imageViewArray;
+    
+    // 快速创建并进入浏览模式
+    XLPhotoBrowser *browser = [XLPhotoBrowser showPhotoBrowserWithCurrentImageIndex:index imageCount:imageCount datasource:self];
+    
+    // 设置长按手势弹出的地步ActionSheet数据,不实现此方法则没有长按手势
+    [browser setActionSheetWithTitle:@"" delegate:self cancelButtonTitle:nil deleteButtonTitle:@"" otherButtonTitles:@"保存图片",nil];
+    
+    // 自定义pageControl的一些属性
+    browser.pageDotColor = [UIColor lightGrayColor];
+    browser.currentPageDotColor = [UIColor whiteColor];
+    browser.pageControlStyle = XLPhotoBrowserPageControlStyleClassic;///< 修改底部pagecontrol的样式为系统样式,默认是弹性动画的样式
+    
+    [self closeReplyAlertView];
+}
+
+
+//评论 赞按钮点击
+- (void) commentClick : (StudyCircleCell *) cell
+{
+    if ([self.chatKeyBoard.chatToolBar.textView isFirstResponder]) {
+        [self.chatKeyBoard keyboardDownForComment];
+    }
+    
+    [self closeReplyAlertView];
+    self.selectedCell = cell;
+}
+
+#pragma mark 关闭 评论 赞 弹框
+- (void) closeReplyAlertView
+{
+    if (self.selectedCell != nil && self.selectedCell.replyAlertView != nil) {
+        [self.selectedCell closeReplyAlertView];
+    }
+}
+
+/**
+ * 赞 取消赞
+ * cid 主贴ID
+ * isPraise YES 赞 NO 取消赞
+ */
+#pragma mark 赞 取消赞
+- (void) praiseWithCid : (NSString *) cid isPraise : (BOOL) isPraise cell:(StudyCircleCell *)cell
+{
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CirClePraise,[UserInfoTool getUserInfo].token];
+    if (!isPraise) {
+        url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CirCleUnPraise,[UserInfoTool getUserInfo].token];
+    }
+    
+    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    dic[@"cid"] = cid;
+    
+    __weak __typeof(self) weakSelf = self;
+
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        
+        int code = [responseDic[@"rescode"] intValue];
+        if (code == 10000) {
+            
+            NSArray *praises = [StudyPraises objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            StudyCircleFrame *frame = self.dataArray[[self.tableView indexPathForCell:cell].row];
+            StudyCircleModel *studyCircleModel = frame.studyCircleModel;
+            studyCircleModel.praises = praises;
+            frame.studyCircleModel = studyCircleModel;
+            
+            [self.tableView reloadData];
+            
+            [cell setGoodButtonStatus:isPraise];
+            if (weakSelf.selectedCell != nil && weakSelf.selectedCell.replyAlertView != nil) {
+                [weakSelf.selectedCell closeReplyAlertViewWithAnimate];
+            }
+        }else
+        {
+            [MBProgressHUD showError:responseDic[@"data"]];
+        }
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:@"发送请求失败"];
+    }];
+}
+
+#pragma mark 删除按钮点击
+- (void)deleteCircle:(StudyCircleCell *)cell cid:(NSString *)cid studyCircleModel:(StudyCircleModel *)studyCircleModel
+{
+    [self.chatKeyBoard keyboardDownForComment];
+
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定删除吗?" message:@"" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+    }];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:[ManyLanguageMag getLOginStrWith:@"确定"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        {
+            MBProgressHUD *hud = [[MBProgressHUD alloc] init];
+            [self.view addSubview:hud];
+            [hud show:YES];
+            
+            NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CirCleDelete,[UserInfoTool getUserInfo].token];
+            
+            NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+            dic[@"cid"] = cid;
+            
+            [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+                [hud hide:YES];
+
+                int code = [responseDic[@"rescode"] intValue];
+                if (code == 10000) {
+                    [self.dataArray removeObjectAtIndex:[self.tableView indexPathForCell:cell].row];
+                    [self.tableView reloadData];
+                    
+                    [StudyFrameTool delegateStudyCircle:studyCircleModel];
+                }else
+                {
+                    [MBProgressHUD showError:responseDic[@"data"]];
+                }
+                
+            } fail:^(NSError *error) {
+                [hud hide:YES];
+                [MBProgressHUD showError:@"发送请求失败"];
+            }];
+        }
+    }];
+    [alertController addAction:cancelAction];
+    [alertController addAction:okAction];
+    
+    [self presentViewController:alertController animated:YES completion:nil];
+}
+
+#pragma mark 评论点击
+- (void)replyButtonCic:(StudyCircleCell *)cell studyCircleModel:(StudyCircleModel *)studyCircleModel
+{
+    self.chatKeyBoard.placeHolder = @"评论";
+
+    self.studyCircleModel = studyCircleModel;
+    self.replyClickCell = cell;
+    self.tabBarController.tabBar.hidden = YES;
+    [cell closeReplyAlertViewWithAnimate];
+    [self.chatKeyBoard keyboardUpforComment];    
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
+    [self.chatKeyBoard keyboardDownForComment];
+    [self hiddenOrShow:NO];
+    [self closeReplyAlertView];
+}
+
+#pragma mark -- ChatKeyBoardDataSource
+- (NSArray<MoreItem *> *)chatKeyBoardMorePanelItems
+{
+        return @[];
+}
+- (NSArray<ChatToolBarItem *> *)chatKeyBoardToolbarItems
+{
+    ChatToolBarItem *item1 = [ChatToolBarItem barItemWithKind:kBarItemFace normal:@"face" high:@"face_HL" select:@"keyboard"];
+    
+    ChatToolBarItem *item2 = [ChatToolBarItem barItemWithKind:kBarItemVoice normal:@"voice" high:@"voice_HL" select:@"keyboard"];
+    
+    ChatToolBarItem *item3 = [ChatToolBarItem barItemWithKind:kBarItemMore normal:@"more_ios" high:@"more_ios_HL" select:nil];
+    
+    ChatToolBarItem *item4 = [ChatToolBarItem barItemWithKind:kBarItemSwitchBar normal:@"switchDown" high:nil select:nil];
+    
+    return @[item1, item2, item3, item4];
+}
+
+- (NSArray<FaceThemeModel *> *)chatKeyBoardFacePanelSubjectItems
+{
+    return [FaceSourceManager loadFaceSource];
+}
+
+- (void)hiddenOrShow:(BOOL)isShow
+{
+    UIViewController *currentVc = [self getCurrentVC];
+    if ([currentVc isKindOfClass:[StudyCircleController class]]) {
+        self.tabBarController.tabBar.hidden = isShow;
+    }
+}
+
+//获取当前屏幕显示的viewcontroller
+- (UIViewController *)getCurrentVC {
+    
+    UIWindow *window = [[UIApplication sharedApplication].windows firstObject];
+    if (!window) {
+        return nil;
+    }
+    UIView *tempView;
+    for (UIView *subview in window.subviews) {
+        if ([[subview.classForCoder description] isEqualToString:@"UILayoutContainerView"]) {
+            tempView = subview;
+            break;
+        }
+    }
+    if (!tempView) {
+        tempView = [window.subviews lastObject];
+    }
+    
+    id nextResponder = [tempView nextResponder];
+    while (![nextResponder isKindOfClass:[UIViewController class]] || [nextResponder isKindOfClass:[UINavigationController class]] || [nextResponder isKindOfClass:[UITabBarController class]]) {
+        tempView =  [tempView.subviews firstObject];
+        
+        if (!tempView) {
+            return nil;
+        }
+        nextResponder = [tempView nextResponder];
+    }
+    return  (UIViewController *)nextResponder;
+}
+
+#pragma mark 昵称点击
+- (void)nameLabelClick:(StudyCircleCell *)cell
+{
+    StudyCircleFrame *frame = self.dataArray[[self.tableView indexPathForCell:cell].row];
+    
+    [self jumpToDetilController:(int)frame.studyCircleModel.userid];
+}
+
+#pragma mark 点击发送
+- (void)chatKeyBoardSendText:(NSString *)text
+{
+    [self.chatKeyBoard keyboardDownForComment];
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CircleReply,[UserInfoTool getUserInfo].token];
+    
+    NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+    dic[@"cid"] = self.studyCircleModel.ID;
+    if (self.chatKeyBoard.placeHolder != nil && self.chatKeyBoard.placeHolder.length > 0) {
+        if ([self.chatKeyBoard.placeHolder isEqualToString:@"评论"]) {
+            dic[@"touserid"] = [NSString stringWithFormat:@"0"];
+        }else if ([self.chatKeyBoard.placeHolder containsString:@"回复"])
+        {
+            
+            StudyReply *studyReply = self.studyCircleModel.replys[[self.replyClickCell.commentTableView indexPathForCell:self.replyClickCell].row];
+            dic[@"touserid"] = [NSString stringWithFormat:@"%ld",(long)studyReply.userid];
+        }
+    }
+    dic[@"content"] = [NSString encodeBase64:text];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        
+        int code = [responseDic[@"rescode"] intValue];
+        if (code == 10000) {
+            NSArray *replys = [StudyReply objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+            
+            int index = (int)[self.tableView indexPathForCell:self.replyClickCell].row;
+            
+            self.studyCircleModel.replys = replys;
+            StudyCircleFrame *frame = self.dataArray[index];
+            frame.studyCircleModel = self.studyCircleModel;
+            
+            [self.tableView reloadData];
+        }else
+        {
+            [MBProgressHUD showError:responseDic[@"msg"]];
+        }
+        
+    } fail:^(NSError *error) {
+        [MBProgressHUD showError:@"发送请求失败"];
+    }];
+}
+
+#pragma mark 点击评论列表中的评论
+- (void)replyListClick:(StudyCircleCell *)cell reply:(StudyReply *)reply studyCircleModel:(StudyCircleModel *)studyCircleModel studyReplyCell:(StudyReplyCell *)studyReplyCell
+{
+    self.replyClickCell = cell;
+    self.studyCircleModel = studyCircleModel;
+
+    //先判断 是不是点击的自己的评论
+    StudyReply *studyReply = studyCircleModel.replys[[cell.commentTableView indexPathForCell:studyReplyCell].row];
+    
+    if (studyReply.userid == [[UserInfoTool getUserInfo].zttid integerValue] || studyReply.touserid == [[UserInfoTool getUserInfo].zttid integerValue]) { //自己的评论 或者 自己的回复
+        
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        }];
+        
+        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            
+            [MBProgressHUD showMessage:@"正在删除"];
+            
+            NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,CricleDeleteReply,[UserInfoTool getUserInfo].token];
+            
+            NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+            dic[@"cid"] = self.studyCircleModel.ID;
+            dic[@"rid"] = studyReply.rid;
+            
+            [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+                
+                int code = [responseDic[@"rescode"] intValue];
+                if (code == 10000) {
+                    [MBProgressHUD showSuccess:@"删除成功"];
+                    NSArray *replys = [StudyReply objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+                    
+                    int index = (int)[self.tableView indexPathForCell:self.replyClickCell].row;
+                    
+                    self.studyCircleModel.replys = replys;
+                    StudyCircleFrame *frame = self.dataArray[index];
+                    frame.studyCircleModel = self.studyCircleModel;
+                    
+                    [self.tableView reloadData];
+                }else
+                {
+                    [MBProgressHUD showError:responseDic[@"msg"]];
+                }
+                
+            } fail:^(NSError *error) {
+                [MBProgressHUD showError:@"发送请求失败"];
+            }];
+        }];
+        [alertController addAction:cancelAction];
+        [alertController addAction:okAction];
+        
+        [self presentViewController:alertController animated:YES completion:nil];
+        return;
+    }
+    
+    if ([self.chatKeyBoard.chatToolBar.textView isFirstResponder]) {
+        [self.chatKeyBoard keyboardDownForComment];
+        return;
+    }
+    
+    NSString *replyString = reply.nickname;
+    if (reply.tonickname != nil && reply.tonickname.length > 0) {
+        replyString = reply.tonickname;
+    }
+    self.chatKeyBoard.placeHolder = [NSString stringWithFormat:@"回复 %@:",replyString];
+    [self.chatKeyBoard keyboardUpforComment];
+}
+
+#pragma mark 空白区域点击 关闭键盘
+- (void)closeKeyboard:(StudyCircleCell *)cell
+{
+    if ([self.chatKeyBoard.chatToolBar.textView isFirstResponder]) {
+        [self.chatKeyBoard keyboardDownForComment];
+    }
+}
+
+#pragma mark 上传学习圈 
+- (void) releaseStudyClick
+{
+    ReleaseStudyController *releaseVc = [[ReleaseStudyController alloc] init];
+    releaseVc.releaseStudy = YES;
+    releaseVc.delegate = self;
+    [self presentViewController:[[MainNavigationController alloc] initWithRootViewController:releaseVc] animated:YES completion:nil];
+}
+
+#pragma mark 发布成功 刷新朋友圈
+- (void)sendSuccessRefush
+{
+    [self getData];
+}
+
+#pragma mark 人名点击 跳转到 详情界面
+- (void)nameClick:(StudyCircleCell *)cell userId:(NSInteger)userId
+{
+    [self jumpToDetilController:(int)userId];
+}
+
+#pragma mark 跳转到 个人详情
+- (void) jumpToDetilController : (int) userId
+{
+    NSDictionary *dic=@{
+                        @"zttid" : @(userId)
+                        };
+    
+    NSString *url=[NSString stringWithFormat:@"%@%@?token=%@",NetHeader,HotIcoClick,[UserInfoTool getUserInfo].token];
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+        NSNumber * code = responseDic[@"rescode"];
+        
+        if (code.integerValue == 10000) {
+            NSDictionary *tempDic = responseDic[@"data"];
+            FriendModel *model=[FriendModel objectWithKeyValues:tempDic];
+            FriendInfoShowHotViewController *infoVc = [[FriendInfoShowHotViewController alloc] init];
+            infoVc.friendM = model;
+            [self.navigationController pushViewController:infoVc animated:YES];
+            
+        }
+    } fail:^(NSError *error) {
+        [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+    }];
+    
+    
+    [self.chatKeyBoard keyboardDownForComment];
+}
+
+#pragma mark 播放按钮点击
+- (void)startButtonClick:(NSInteger)type courseID:(NSString *)courseID
+{
+    //课程
+    if (type == 3 || type == [courseType intValue] ) {
+        [self pushToCourseDetailWithCourseId:courseID];
+    }else if(type == [shalongType intValue])
+    {
+        [self pushToSalonDetailWithCourseId:courseID];
+    }
+}
+
+-(void)pushToCourseDetailWithCourseId:(NSString *)courseid{
+    
+    
+    NewCourseDetailController *newCourseVc = [[NewCourseDetailController alloc] init];
+    newCourseVc.courseid = courseid;
+    [self.navigationController pushViewController:newCourseVc animated:YES];
+    
+}
+
+-(void)pushToSalonDetailWithCourseId:(NSString *)courseid{
+    MainWebController *shalong = [[MainWebController alloc] init];
+    NSString *url = [NSString stringWithFormat:@"%@mh5/shalong/shalongdetail?id=%@&locale=%@",NetHeader,courseid,[ManyLanguageMag getTypeWithWebDiscript]];
+    shalong.url = url;
+    shalong.webTitle = @"沙龙详情";
+    [self.navigationController pushViewController:shalong animated:YES];
+}
+
+@end

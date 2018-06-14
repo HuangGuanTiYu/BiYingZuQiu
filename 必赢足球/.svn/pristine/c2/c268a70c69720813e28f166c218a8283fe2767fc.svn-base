@@ -1,0 +1,144 @@
+//
+//  SpecialCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/24.
+//
+//
+
+#import "SpecialCell.h"
+#import "CourseSpecialModel.h"
+#import "UIImageView+WebCache.h"
+#import "NSString+Extension.h"
+
+@interface SpecialCell()
+
+@property (nonatomic, strong) UIImageView *backImage;
+
+@property (nonatomic, strong) UILabel *titleLabel;
+
+@property (nonatomic, strong) UIView *boomView;
+
+@property (nonatomic, strong) UILabel *conentLabel;
+
+@property (nonatomic, strong) UILabel *studyLabel;
+
+@property (nonatomic, strong) UIView *sepaView;
+
+@end
+
+@implementation SpecialCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.backImage = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.backImage];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.textColor = MainTextColor;
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.boomView = [[UIView alloc] init];
+        [self.contentView addSubview:self.boomView];
+        
+        self.conentLabel = [[UILabel alloc] init];
+        self.conentLabel.textColor = AuxiliaryColor;
+        self.conentLabel.font = [UIFont systemFontOfSize:ys_f20];
+        [self.boomView addSubview:self.conentLabel];
+        
+        self.studyLabel = [[UILabel alloc] init];
+        self.studyLabel.textColor = AuxiliaryColor;
+        self.studyLabel.font = [UIFont systemFontOfSize:ys_f20];
+        [self.boomView addSubview:self.studyLabel];
+        
+        self.collectionLabel = [[UIButton alloc] init];
+        [self.collectionLabel addTarget:self action:@selector(collectionLabelClick:) forControlEvents:UIControlEventTouchUpInside];
+        self.collectionLabel.titleLabel.font = [UIFont systemFontOfSize:ys_f20];
+        [self.collectionLabel setTitle:@"收藏" forState:UIControlStateNormal];
+        [self.collectionLabel setTitleColor:MainColor forState:UIControlStateNormal];
+        [self.collectionLabel setTitle:@"已收藏" forState:UIControlStateSelected];
+        [self.collectionLabel setTitleColor:AuxiliaryColor forState:UIControlStateSelected];
+        self.collectionLabel.layer.borderColor = MainColor.CGColor;
+        self.collectionLabel.layer.borderWidth = 0.5;
+        self.collectionLabel.layer.cornerRadius = fillet;
+        self.collectionLabel.layer.masksToBounds = YES;
+        [self.contentView addSubview:self.collectionLabel];
+        
+        self.sepaView = [[UIView alloc] init];
+        self.sepaView.backgroundColor = ViewBackColor;
+        [self.contentView addSubview:self.sepaView];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.backImage.frame = CGRectMake(0, 0, self.contentView.width, self.contentView.width * 9 / 16);
+    
+    self.titleLabel.frame = CGRectMake(15, CGRectGetMaxY(self.backImage.frame) + mainSpacing, 0, 30);
+    [self.titleLabel sizeToFit];
+    self.titleLabel.width = self.contentView.width - 45 - 2 * 15 - mainSpacing;
+    
+    self.boomView.frame = CGRectMake(self.titleLabel.x, CGRectGetMaxY(self.titleLabel.frame) + 2, self.titleLabel.width, 20);
+    
+    NSString *content = [NSString stringWithFormat:@"共%@项内容",@"16"];
+    self.conentLabel.frame = CGRectMake(0, 0, [NSString returnStringRect:content size:CGSizeMake(self.boomView.width, 20) font:[UIFont systemFontOfSize:ys_f20]].width + mainSpacing, self.boomView.height);
+    
+    self.studyLabel.frame = CGRectMake(CGRectGetMaxX(self.conentLabel.frame), 0, self.boomView.width - CGRectGetMaxX(self.conentLabel.frame), self.conentLabel.height);
+    
+    self.collectionLabel.frame = CGRectMake(self.contentView.width - 15 - 45, 0, 45, 18);
+    self.collectionLabel.centerY = CGRectGetMaxY(self.backImage.frame) + (CGRectGetMaxY(self.boomView.frame) - CGRectGetMaxY(self.backImage.frame)) * 0.5;
+    
+    self.sepaView.frame = CGRectMake(0, self.contentView.height - 10, self.contentView.width, 10);
+}
+
+- (void)setModel:(CourseSpecialModel *)model
+{
+    _model = model;
+    
+    [self.backImage sd_setImageWithURL:[NSURL URLWithString:model.pic] placeholderImage:[UIImage imageNamed:@"zwt_kecheng"]];
+    
+    self.titleLabel.text = model.classesname;
+    
+    NSString *content = [NSString stringWithFormat:@"共%@项内容",@"16"];
+    self.conentLabel.text = content;
+    
+    self.studyLabel.text = @"36人学习";
+    
+    self.collectionLabel.selected = ![self.model.isfavorited isEqualToString:@"0"];
+    if ([self.model.isfavorited isEqualToString:@"0"]) {
+        self.collectionLabel.layer.borderColor = MainColor.CGColor;
+    }else
+    {
+        self.collectionLabel.layer.borderColor = AuxiliaryColor.CGColor;
+    }
+
+}
+
+- (void)setIsFromMyStudy:(BOOL)isFromMyStudy
+{
+    _isFromMyStudy = isFromMyStudy;
+    
+    self.collectionLabel.hidden = isFromMyStudy;
+
+}
+
+- (void) collectionLabelClick : (UIButton *) button
+{
+    if (button.selected) {
+        return;
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(collectionLabelClick:)]) {
+        [self.delegate collectionLabelClick:self];
+    }
+}
+
+@end

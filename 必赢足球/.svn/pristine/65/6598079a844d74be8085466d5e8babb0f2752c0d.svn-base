@@ -1,0 +1,24 @@
+//
+//  AppDelegate.h
+//  MoveSchool
+//
+//  Created by edz on 2017/4/19.
+//
+//
+
+#import <UIKit/UIKit.h>
+
+@interface AppDelegate : UIResponder <UIApplicationDelegate>
+
+@property (strong, nonatomic) UIWindow *window;
+
+/*
+ * 弹出掉线提示框
+ */
+- (void) alertViewLogin;
+
+//菜单数组
+@property (nonatomic, strong) NSArray *menus;
+
+@end
+

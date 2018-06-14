@@ -1,0 +1,78 @@
+//
+//  MineDataCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/9/18.
+//
+//
+
+#import "MineDataCell.h"
+#import "SDImageCache.h"
+#import "TBCityIconFont.h"
+
+
+@interface MineDataCell()
+
+//标题
+@property (nonatomic, strong) UILabel *titleLabel;
+
+//箭头
+@property (nonatomic, strong) UIImageView *nextImage;
+
+//附标题
+@property (nonatomic, strong) UILabel *cacheLabel;
+
+//头像
+@property (nonatomic, strong) UIImageView *headerImage;
+
+@end
+
+@implementation MineDataCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.titleLabel.textColor = MainTextColor;
+        [self.contentView addSubview:self.titleLabel];
+        
+        self.nextImage = [[UIImageView alloc] init];
+        self.nextImage.contentMode = UIViewContentModeCenter;
+        self.nextImage.image = [UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e614", ys_f24, AuxiliaryColor)];
+        [self.contentView addSubview:self.nextImage];
+        
+        self.cacheLabel = [[UILabel alloc] init];
+        self.cacheLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.cacheLabel.textColor = AuxiliaryColor;
+        self.cacheLabel.textAlignment = NSTextAlignmentRight;
+        [self.contentView addSubview:self.cacheLabel];
+    }
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.nextImage.frame = CGRectMake(self.width - 13 - 15, 0, 13, 13);
+    self.nextImage.centerY = self.height * 0.5;
+    
+    self.titleLabel.frame = CGRectMake(15, 0, self.width -  10 * 2, self.height);
+    self.cacheLabel.frame = CGRectMake(self.width * 0.5, 0, self.width * 0.5 - 15 - 18, self.height);
+    
+    self.cacheLabel.width = self.width * 0.5 - 15 - 18;    
+    
+}
+
+- (void)setTitle:(NSString *)title
+{
+    
+    _title = title;
+    
+    self.titleLabel.text = title;
+}
+
+
+@end

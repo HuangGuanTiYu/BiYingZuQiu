@@ -1,0 +1,346 @@
+//
+//  NewCourseDetailController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/25.
+//
+//
+
+#import "NewCourseDetailController.h"
+#import "AFNetWW.h"
+#import "NewCourseModel.h"
+#import "MJExtension.h"
+#import "UIImageView+WebCache.h"
+#import "CourseBean.h"
+#import "TBCityIconFont.h"
+#import "UILabel+Extension.h"
+#import "NSAttributedString+Extension.h"
+#import "CourseChapterCell.h"
+#import "ChapterModel.h"
+
+#define kScreenHeight CGRectGetHeight([UIScreen mainScreen].bounds)
+#define StatusBar_HEIGHT 20
+#define NavigationBar_HEIGHT 44
+
+@interface NewCourseDetailController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) UIImageView *backImage;
+
+@property (nonatomic, strong) NewCourseModel *model;
+
+@property (nonatomic, strong) UILabel *contentLabel;
+
+@property (nonatomic, assign) CGFloat contentH;
+
+@property (nonatomic, strong) UIView *boomView;
+
+@property (nonatomic, strong) UILabel *allButton;
+
+@property (nonatomic, strong) UIView *contentView;
+
+@property (nonatomic, strong) UIView *headerView;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, strong) UIView *chapterView;
+
+@property (nonatomic, strong) NSArray *chapterDatas;
+
+@property (nonatomic, strong) UIView *navBarView;
+
+@property(nonatomic,strong)UIView *navigationBackView;
+
+
+@end
+
+@implementation NewCourseDetailController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setUpData];
+    
+    if ([self respondsToSelector:@selector(setAutomaticallyAdjustsScrollViewInsets:)]) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+    }
+
+}
+
+#pragma mark -初始化导航栏
+- (void)setupNavigationBar {
+    
+    // 导航栏背景view
+    _navigationBackView = [[UIView alloc] init];
+    _navigationBackView.frame = CGRectMake(0, 0, SCREEN_WIDTH, StatusBar_HEIGHT + NavigationBar_HEIGHT);
+    [self.view addSubview:_navigationBackView];
+}
+
+- (UIView *)navBarView {
+    if (!_navBarView) {
+        _navBarView = [[UIView alloc] init];
+        _navBarView.backgroundColor = [UIColor redColor];
+        _navBarView.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, 64);
+    }
+    return _navBarView;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.navBarView removeFromSuperview];
+    [self.navigationController setNavigationBarHidden:YES animated:YES];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    if (self.navigationController.childViewControllers.count > 1) {
+        [self.navigationController setNavigationBarHidden:NO animated:YES];
+        
+    }
+}
+
+- (void) setUpData
+{
+    
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@?index=0&count=100&courseid=%@",NetHeader,GetCoursesDetail,self.courseid];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:likeUrl WithParameters:nil success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+             NewCourseModel *model = [NewCourseModel objectWithKeyValues:responseDic[@"data"]];
+             self.model = model;
+
+             self.chapterDatas = [ChapterModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+             
+             [self setUpUI];
+
+             [self.tableView reloadData];
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+
+}
+
+- (void) setUpUI
+{
+
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 0)];
+    self.headerView = headerView;
+    headerView.backgroundColor = ViewBackColor;
+    
+    //背景图
+    UIImageView *backImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 210)];
+    [backImage sd_setImageWithURL:[NSURL URLWithString:self.model.courseBean.image] placeholderImage:[UIImage imageNamed:@""]];
+    [headerView addSubview:backImage];
+    
+    //播放按钮
+    UIButton *startButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 45, 45)];
+    [startButton setImage:[UIImage imageNamed:@"kecheng_bofang"] forState:UIControlStateNormal];
+    startButton.centerX = self.view.width * 0.5;
+    startButton.centerY = backImage.height * 0.5;
+    [headerView addSubview:startButton];
+    
+    //标题
+    UIView *titleView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(backImage.frame), self.view.width, 45)];
+    titleView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:titleView];
+    
+    //分享
+    UIImageView *shareImage = [[UIImageView alloc] initWithFrame:CGRectMake(titleView.width - titleView.height, 0, titleView.height, titleView.height)];
+    shareImage.contentMode = UIViewContentModeCenter;
+    shareImage.image = [UIImage iconWithInfo:TBCityIconInfoMake(@"\U0000e642", 15, MainTextColor)];
+    [titleView addSubview:shareImage];
+    
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, shareImage.x - 30, titleView.height)];
+    titleLabel.text = self.model.courseBean.title;
+    titleLabel.textColor = MainTextColor;
+    titleLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [titleView addSubview:titleLabel];
+    
+    //内容
+    UIView *contentView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(titleView.frame) + mainSpacing, self.view.width, 105)];
+    self.contentView = contentView;
+    contentView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:contentView];
+    
+    UILabel *contentLabel = [[UILabel alloc] initWithFrame:CGRectMake(15, 15, 0, 0)];
+    self.contentLabel = contentLabel;
+    contentLabel.width = contentView.width - 30;
+    contentLabel.height = contentView.height - 20;
+    contentLabel.font = [UIFont systemFontOfSize:ys_f24];
+    NSAttributedString * attrStr = [[NSAttributedString alloc] initWithData:[self.model.courseBean.desc dataUsingEncoding:NSUnicodeStringEncoding] options:@{ NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType } documentAttributes:nil error:nil];
+
+    contentLabel.attributedText = attrStr;
+    contentLabel.numberOfLines = 3;
+    contentLabel.textColor = MainTextColor;
+    [contentView addSubview:contentLabel];
+    
+    [UILabel changeLineSpaceForLabel:contentLabel WithSpace:2.5];
+    contentLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    
+    contentView.height = contentLabel.height + 30 + 2 * mainSpacing;
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:contentLabel.text];
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    [paragraphStyle setLineSpacing:2.5];
+    [attributedString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, [contentLabel.text length])];
+    
+    CGSize contentH = [attributedString returnAttributedStringRect:attributedString size:CGSizeMake(contentLabel.width, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f24]];
+    self.contentH = contentH.height;
+    
+    //底部 时长 + 免费
+    UIView *boomView = [[UIView alloc] initWithFrame:CGRectMake(15, CGRectGetMaxY(contentLabel.frame) + 7, contentView.width - 30, 30)];
+    self.boomView = boomView;
+    [contentView addSubview:boomView];
+    
+    if (contentH.height > contentLabel.height) {
+        UILabel *allButton = [[UILabel alloc] initWithFrame:CGRectMake(15, CGRectGetMaxY(contentLabel.frame) + 7, 50, 20)];
+        self.allButton = allButton;
+        allButton.userInteractionEnabled = YES;
+        [allButton addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(allButtonClick:)]];
+        allButton.text = @"展开";
+        allButton.textColor = MainColor;
+        allButton.font = [UIFont systemFontOfSize:ys_f24];
+        [contentView addSubview:allButton];
+        boomView.y = CGRectGetMaxY(allButton.frame) + 7;
+        contentView.height = contentLabel.height + 30 + 2 * mainSpacing + 20;
+
+    }
+    
+    //免费
+    UILabel *freeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 50, boomView.height)];
+    freeLabel.text = @"免费";
+    freeLabel.textColor = MainColor;
+    freeLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [boomView addSubview:freeLabel];
+    [freeLabel sizeToFit];
+    
+    //时长
+    CGFloat timeX = CGRectGetMaxX(freeLabel.frame) + mainSpacing;
+    UILabel *timeLabel = [[UILabel alloc] initWithFrame:CGRectMake(timeX, 0, boomView.width - timeX - mainSpacing, boomView.height)];
+    timeLabel.centerY = freeLabel.centerY;
+    timeLabel.text = [NSString stringWithFormat:@"时长：%@",self.model.courseBean.showDuration];
+    timeLabel.textColor = AuxiliaryColor;
+    timeLabel.font = [UIFont systemFontOfSize:ys_f24];
+    [boomView addSubview:timeLabel];
+    
+    //课程章节
+    UIView *chapterView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(contentView.frame) + mainSpacing, headerView.width, 45)];
+    self.chapterView = chapterView;
+    chapterView.backgroundColor = [UIColor whiteColor];
+    [headerView addSubview:chapterView];
+    
+    UILabel *chapter = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, chapterView.width - 30, chapterView.height)];
+    chapter.text = @"课程章节";
+    chapter.textColor = MainTextColor;
+    chapter.font = [UIFont systemFontOfSize:ys_f30];
+    [chapterView addSubview:chapter];
+    
+    //分割线
+    UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, chapterView.height - 0.5, chapterView.width, 0.5)];
+    sepaView.backgroundColor = SepaViewColor;
+    [chapterView addSubview:sepaView];
+    
+    headerView.height = CGRectGetMaxY(self.contentView.frame) + mainSpacing + 45;
+    
+    //章节
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    self.tableView = tableView;
+    tableView.tableHeaderView = headerView;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+
+    // 初始化导航栏
+    [self setupNavigationBar];
+    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 50)];
+    footerView.backgroundColor = [UIColor redColor];
+    
+    //评论
+    UITableView *commentView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, 440)];
+    commentView.delegate = self;
+    commentView.dataSource = self;
+    [self.view addSubview:commentView];
+    tableView.tableFooterView = commentView;
+
+}
+
+- (void) allButtonClick : (UIGestureRecognizer *) gestureRecognizer
+{
+    UILabel *view = (UILabel *)gestureRecognizer.view;
+    
+    if ([view.text isEqualToString:@"收起"]) {
+        view.text = @"展开";
+        self.contentLabel.height = 85;
+        self.contentLabel.numberOfLines = 3;
+    }else
+    {
+        view.text = @"收起";
+        self.contentLabel.height = self.contentH;
+        self.contentLabel.numberOfLines = 0;
+    }
+    
+    [self.contentLabel sizeToFit];
+    self.allButton.y = CGRectGetMaxY(self.contentLabel.frame) + 7;
+    self.boomView.y = CGRectGetMaxY(self.allButton.frame) + 7;
+    self.contentView.height = self.contentLabel.height + 30 + 2 * mainSpacing + 20;
+    self.chapterView.y = CGRectGetMaxY(self.contentView.frame) + mainSpacing;
+    
+    self.headerView.height = CGRectGetMaxY(self.chapterView.frame);
+    self.tableView.tableHeaderView = self.headerView;
+
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (tableView == self.tableView) {
+        return self.chapterDatas.count;
+    }else
+    {
+        return 10;
+    }
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if (tableView == self.tableView) {
+        static NSString *ID = @"CourseChapterCell";
+        CourseChapterCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[CourseChapterCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        [cell.chapter setTitle:[NSString stringWithFormat:@"第%ld章",(long)indexPath.row + 1] forState:UIControlStateNormal];
+        ChapterModel *model = self.chapterDatas[indexPath.row];
+        cell.model = model;
+        return cell;
+    }else
+    {
+        static NSString *ID = @"cell";
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+        }
+        cell.textLabel.text = [NSString stringWithFormat:@"%ld",(long)indexPath.row];
+        return cell;
+    }
+}
+
+
+#pragma mark -UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    
+    CGFloat offset_Y = scrollView.contentOffset.y;
+    CGFloat alpha = (offset_Y)/300.0f;
+    
+    NSLog(@"%f",alpha);
+
+    
+    self.navigationBackView.backgroundColor = [MainColor colorWithAlphaComponent:alpha];
+}
+
+@end

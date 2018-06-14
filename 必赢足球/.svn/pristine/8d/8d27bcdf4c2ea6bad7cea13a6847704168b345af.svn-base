@@ -1,0 +1,343 @@
+
+//
+//  MyDownLoadsViewController.m
+//  zhitongti
+//
+//  Created by yuhongtao on 16/8/11.
+//  Copyright © 2016年 caobohua. All rights reserved.
+//
+
+#import "MyDownLoadsViewController.h"
+#import "ManyLanguageMag.h"
+#import "DWDownloadItemTool.h"
+#import "MyDownLoadCell.h"
+#import "DWDownloadItem.h"
+#import "DownLoadCourseLiveController.h"
+#import "DWDownloadItemTool.h"
+#import "MainWebController.h"
+#import "AFNetWW.h"
+
+@interface MyDownLoadsViewController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property(nonatomic, strong) NSArray *downLoaders;
+
+@property (nonatomic, weak) UITableView *tableView;
+
+//是否可以编辑
+@property (nonatomic, assign) BOOL isEdit;
+
+@property(nonatomic,strong) UIView *downloadView;
+
+@property (nonatomic, strong) NSMutableArray *downCells;
+
+@property (nonatomic, strong) UIButton *btn;
+
+@property (nonatomic, strong) UIView *noCommentView;
+
+@end
+
+@implementation MyDownLoadsViewController
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+ 
+    self.title = [ManyLanguageMag getMineMenuStrWith:@"我的下载"];
+    
+    [self setUpUI];
+
+    [self getData];
+    
+}
+
+- (void) setUpUI
+{
+    UIView *freeDiskView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.height - 30 - 64, self.view.width, 30)];
+    freeDiskView.backgroundColor = ViewBackColor;
+    
+    UILabel *freeDisk = [[UILabel alloc] initWithFrame:CGRectMake(mainSpacing, mainSpacing, freeDiskView.width - 2 * mainSpacing, 20)];
+    freeDisk.centerY = freeDiskView.height * 0.5;
+    freeDisk.text = [self getFreeDiskspace];
+    freeDisk.font = [UIFont systemFontOfSize:ys_28];
+    freeDisk.textColor = AuxiliaryColor;
+    [freeDiskView addSubview:freeDisk];
+    
+    [self.view addSubview:freeDiskView];
+    
+    UITableView *tablView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, self.view.width, self.view.height - 30 - 64)];
+    tablView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView = tablView;
+    tablView.delegate = self;
+    tablView.dataSource = self;
+    [self.view addSubview:tablView];
+    
+    UIButton *btn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
+    [btn addTarget:self action:@selector(edit:) forControlEvents:UIControlEventTouchUpInside];
+    self.btn = btn;
+    
+    [btn setTitle:[ManyLanguageMag getMineMenuStrWith:@"编辑"] forState:UIControlStateNormal];
+    [btn setTitle:[ManyLanguageMag getMineMenuStrWith:@"完成"] forState:UIControlStateSelected];
+    btn.selected = NO;
+    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    btn.titleLabel.font = [UIFont systemFontOfSize:ys_28];
+    btn.imageEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 0);
+    btn.titleEdgeInsets = UIEdgeInsetsMake(0, 30, 0, 0);
+    UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithCustomView:btn];
+    
+    [self SetDownloadView];
+    
+    self.navigationItem.rightBarButtonItem = backItem;
+    
+    //没有评论
+    UIView *noCommentView = [[UIView alloc] initWithFrame:self.view.bounds];
+    self.noCommentView = noCommentView;
+    noCommentView.hidden = YES;
+    [self.view addSubview:noCommentView];
+    
+    //图片 + 文字
+    UIView *imageTexgView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, noCommentView.width, 129)];
+    imageTexgView.centerY = self.view.height * 0.5 - 45 - 64;
+    [noCommentView addSubview:imageTexgView];
+    
+    //背景图
+    UIImageView *noImage = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 121, 90)];
+    noImage.image = [UIImage imageNamed:@"kong"];
+    noImage.centerX = noCommentView.width * 0.5;
+    [imageTexgView addSubview:noImage];
+    
+    UILabel *toTestLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(noImage.frame) + 5, noCommentView.width, 20)];
+    toTestLabel.textAlignment = NSTextAlignmentCenter;
+    toTestLabel.text = @"还没有内容呀~";
+    toTestLabel.textColor = AuxiliaryColor;
+    toTestLabel.font = [UIFont systemFontOfSize:ys_28];
+    [imageTexgView addSubview:toTestLabel];
+}
+
+- (void) getData
+{
+    self.downCells = [NSMutableArray array];
+    
+    self.downLoaders = (NSArray *)[DWDownloadItemTool getDWDownloadItem];
+
+    if (self.downLoaders.count > 0) {
+        if (self.tableView != nil) {
+            [self.tableView reloadData];
+        }
+        self.tableView.hidden = NO;
+        self.btn.hidden = NO;
+        self.noCommentView.hidden = YES;
+    }else
+    {
+        self.btn.hidden = YES;
+        self.tableView.hidden = YES;
+        self.noCommentView.hidden = NO;
+    }
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    
+    return self.downLoaders.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    static NSString *ID = @"cell";
+    
+    DWDownloadItem *item = self.downLoaders[indexPath.row];
+    MyDownLoadCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[MyDownLoadCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.selectButton.selected = NO;
+    [self.downCells addObject:cell];
+    cell.item = item;
+    cell.isEdit = self.isEdit;
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    self.isEdit = NO;
+    self.btn.selected = NO;
+    
+    if (self.downCells.count > 0) {
+        for (MyDownLoadCell *cell in self.downCells) {
+            cell.isEdit = self.isEdit;
+        }
+    }
+    
+    DWDownloadItem *item = self.downLoaders[indexPath.row];
+    
+    //pdf
+    if (item.format != 0 && item.format != 2) {
+        NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,LearnRecord,[UserInfoTool getUserInfo].token];
+        
+        NSDictionary *dic=@{
+                            @"chapterid" : item.chapterid,
+                            @"learntime" : @"180"
+                            };
+        
+        [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:dic success:^(id responseDic) {
+            int rescode = [responseDic[@"rescode"] intValue];
+            if (rescode == 10000) {
+                
+            }
+        } fail:^(NSError *error) {
+            
+        }];
+        
+        MainWebController *webViewVc = [[MainWebController alloc] init];
+        webViewVc.url = item.pdfUrl;
+        webViewVc.webTitle = item.title;
+        [self.navigationController pushViewController:webViewVc animated:YES];
+    }else{
+        DownLoadCourseLiveController *liveVc = [[DownLoadCourseLiveController alloc] init];
+        liveVc.format = 3;
+        liveVc.liveTitle = item.title;
+        liveVc.videoLocalPath = item.videoPath;
+        liveVc.chapterid = item.chapterid;
+        [self presentViewController:liveVc animated:YES completion:nil];
+    }
+    
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+
+}
+
+#pragma mark 存储内存
+- (NSString *)getFreeDiskspace{
+    float totalSpace;
+    float totalFreeSpace=0.f;
+    NSError *error = nil;
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSDictionary *dictionary = [[NSFileManager defaultManager] attributesOfFileSystemForPath:[paths lastObject] error: &error];
+    if (dictionary) {
+        NSNumber *fileSystemSizeInBytes = [dictionary objectForKey: NSFileSystemSize];
+        NSNumber *freeFileSystemSizeInBytes = [dictionary objectForKey:NSFileSystemFreeSize];
+        totalSpace = [fileSystemSizeInBytes floatValue]/1024.0f/1024.0f/1024.0f;
+        totalFreeSpace = [freeFileSystemSizeInBytes floatValue]/1024.0f/1024.0f/1024.0f;
+        NSString *str = [NSString stringWithFormat:@"%@%.2f GB，%@%.2f GB%@",[ManyLanguageMag getHotTypeStrWith:@"总共"],totalSpace-totalFreeSpace,[ManyLanguageMag getHotTypeStrWith:@"剩余"],totalFreeSpace,[ManyLanguageMag getHotTypeStrWith:@"可用"]];
+        return str;
+    } else {
+        NSLog(@"Error Obtaining System Memory Info: Domain = %@, Code = %ld", [error domain], (long)[error code]);
+        return 0;
+        
+    }
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 105;
+}
+
+#pragma 编辑 
+- (void) edit : (UIButton *) button
+{
+    button.selected = !button.selected;
+    
+    self.isEdit = button.selected;
+    
+    if (self.downCells.count > 0) {
+        for (MyDownLoadCell *cell in self.downCells) {
+            cell.isEdit = self.isEdit;
+        }
+    }
+    self.downloadView.hidden = !button.selected;
+}
+
+-(void)SetDownloadView{
+    self.downloadView = [[UIView alloc]initWithFrame:CGRectMake(0, self.view.height-104-11, self.view.width, 50)];
+    self.downloadView.hidden = YES;
+    self.downloadView.backgroundColor = ViewBackColor;
+    [self.view addSubview: self.downloadView];
+    
+    UIButton *allSelBtn=[[UIButton alloc]initWithFrame:CGRectMake(0, 0, self.view.width/2, self.downloadView.height)];
+    [allSelBtn setTitle:[ManyLanguageMag getMineMenuStrWith:@"全选" ] forState:UIControlStateNormal];
+    [allSelBtn setTitle:@"取消全选" forState:UIControlStateSelected];
+    allSelBtn.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    [allSelBtn setTitleColor:AuxiliaryColor forState:UIControlStateNormal];
+    [allSelBtn addTarget:self action:@selector(allSelBtnC:) forControlEvents:UIControlEventTouchUpInside];
+    [self.downloadView addSubview:allSelBtn];
+    
+    
+    UIButton *deleBtn = [[UIButton alloc]initWithFrame:CGRectMake(self.view.width/2, 0, self.view.width / 2, self.downloadView.height)];
+    [deleBtn  setTitle:[ManyLanguageMag getMineMenuStrWith:@"删除"] forState:UIControlStateNormal];
+    [deleBtn setTitleColor:MainColor forState:UIControlStateNormal];
+    [deleBtn addTarget:self action:@selector(deleBtnC:) forControlEvents:UIControlEventTouchUpInside];
+    deleBtn.titleLabel.font = [UIFont systemFontOfSize:ys_f30];
+    
+    UIView *sepaView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0.5, mainSpacing)];
+    sepaView.backgroundColor = AuxiliaryColor;
+    sepaView.centerX = self.downloadView.width * 0.5;
+    sepaView.centerY = self.downloadView.height * 0.5;
+    [self.downloadView addSubview:sepaView];
+    
+    [self.downloadView addSubview:deleBtn];
+}
+
+#pragma mark 全选
+- (void) allSelBtnC : (UIButton *) button
+{
+    button.selected = !button.selected;
+    
+    BOOL allButtonSelected = YES;
+    if (self.downCells.count > 0) {
+        for (MyDownLoadCell *cell in self.downCells) {
+            if (cell.selectButton.selected == NO) {
+                allButtonSelected = NO;
+                break;
+            }
+        }
+        
+        for (MyDownLoadCell *cell in self.downCells) {
+            cell.selectButton.selected = !allButtonSelected;
+        }
+    }
+}
+
+#pragma mark 删除
+- (void) deleBtnC : (UIButton *) button
+{
+    
+    if (self.downCells.count > 0) {
+        
+        for (MyDownLoadCell *cell in self.downCells) {
+            if (cell.selectButton.selected) {
+                DWDownloadItem *item = self.downLoaders[[self.tableView indexPathForCell:cell].row];
+                
+                [[NSFileManager defaultManager] removeItemAtPath:item.videoPath error:nil];
+                
+                [DWDownloadItemTool deleteDWDownloadItem:item];
+                self.downLoaders = (NSArray *)[DWDownloadItemTool getDWDownloadItem];
+                self.downCells = [NSMutableArray array];
+                [self.tableView reloadData];
+                self.btn.selected = NO;
+
+            }
+        }
+    }
+    
+    if (self.downLoaders.count > 0) {
+        self.tableView.hidden = NO;
+        self.btn.hidden = NO;
+        self.noCommentView.hidden = YES;
+        
+    }else
+    {
+        self.btn.hidden = YES;
+        self.tableView.hidden = YES;
+        self.noCommentView.hidden = NO;
+        self.downloadView.hidden = YES;
+    }
+}
+
+@end

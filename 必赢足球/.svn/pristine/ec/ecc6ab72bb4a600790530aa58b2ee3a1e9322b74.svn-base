@@ -1,0 +1,91 @@
+//
+//  InformationListController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/21.
+//
+//
+
+#import "InformationListController.h"
+#import "AFNetWW.h"
+#import "InformationListCell.h"
+#import "MJExtension.h"
+#import "InformationListModel.h"
+
+@interface InformationListController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) NSArray *datas;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@end
+
+@implementation InformationListController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setUpUI];
+    
+    [self setUpData];
+}
+
+- (void) setUpUI
+{
+    UITableView *tableView = [[UITableView alloc] initLineWithFrame:self.view.bounds];
+    tableView.height = self.view.height - 64 - 45;
+    self.tableView = tableView;
+    tableView.backgroundColor = [UIColor whiteColor];
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+}
+
+- (void) setUpData
+{
+    NSString *likeUrl = [NSString stringWithFormat:@"%@%@?index=0&count=10&token=%@",NetHeader,GetNewsList,[UserInfoTool getUserInfo].token];
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"get" withURLStr:likeUrl WithParameters:nil success:^(id responseDic)
+     {
+         if ([responseDic[@"rescode"] intValue] == 10000) {
+             
+             self.datas = [InformationListModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+             
+             [self.tableView reloadData];
+         }
+         
+     }fail:^(NSError *error) {
+         
+     }];
+}
+
+- (NSString *)titleForPagerTabStripViewController:(XLPagerTabStripViewController *)pagerTabStripViewController
+{
+    return self.studyTitle;
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.datas.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *ID = @"InformationListCell";
+    InformationListCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[InformationListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    
+    InformationListModel *model = self.datas[indexPath.row];
+    cell.model = model;
+    return cell;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 93;
+}
+
+@end

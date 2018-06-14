@@ -1,0 +1,13 @@
+//
+//  FindClassify.m
+//  MoveSchool
+//
+//  Created by edz on 2017/8/21.
+//
+//
+
+#import "FindClassifyModel.h"
+
+@implementation FindClassifyModel
+
+@end

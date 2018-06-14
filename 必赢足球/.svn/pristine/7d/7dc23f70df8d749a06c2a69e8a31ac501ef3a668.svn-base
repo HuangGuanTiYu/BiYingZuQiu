@@ -1,0 +1,124 @@
+//
+//  RankCell.m
+//  MoveSchool
+//
+//  Created by edz on 2017/10/27.
+//
+//
+
+#import "RankCell.h"
+#import "UIImageView+WebCache.h"
+#import "RankModel.h"
+#import "NSString+Extension.h"
+
+@interface RankCell()
+
+@property (nonatomic, strong) UIImageView *backImage;
+
+//头像
+@property (nonatomic, strong) UIImageView *headerImage;
+
+//右侧View
+@property (nonatomic, strong) UIView *rigthView;
+
+//名字+描述
+@property (nonatomic, strong) UILabel *nameLabel;
+
+//粉丝数
+@property (nonatomic, strong) UILabel *fansCountLabel;
+
+//排名
+@property (nonatomic, strong) UILabel *rankLabel;
+
+@end
+
+@implementation RankCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.backImage = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.backImage];
+        
+        self.headerImage = [[UIImageView alloc] init];
+        [self.contentView addSubview:self.headerImage];
+        
+        self.rigthView = [[UIView alloc] init];
+        [self.contentView addSubview:self.rigthView];
+        
+        self.nameLabel = [[UILabel alloc] init];
+        self.nameLabel.font = [UIFont systemFontOfSize:ys_28];
+        self.nameLabel.textColor = MainTextColor;
+        [self.rigthView addSubview:self.nameLabel];
+        
+        self.fansCountLabel = [[UILabel alloc] init];
+        self.fansCountLabel.font = [UIFont systemFontOfSize:ys_f24];
+        self.fansCountLabel.textColor = AuxiliaryColor;
+        [self.rigthView addSubview:self.fansCountLabel];
+        
+        self.rankLabel = [[UILabel alloc] init];
+        self.rankLabel.font = [UIFont systemFontOfSize:ys_f30];
+        self.rankLabel.textColor = MainColor;
+        [self.contentView addSubview:self.rankLabel];
+        
+        self.crownImage = [[UIImageView alloc] init];
+        self.crownImage.image = [UIImage imageNamed:@"paihangbang_huangguan"];
+        [self.contentView addSubview:self.crownImage];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    self.backImage.frame = CGRectMake(mainSpacing15, 0, self.contentView.width - 2 * mainSpacing15, self.contentView.height - 7);
+    
+    self.headerImage.frame = CGRectMake(mainSpacing15 * 2, 0, 35, 35);
+    self.headerImage.centerY = self.contentView.height * 0.5;
+    self.headerImage.layer.cornerRadius = self.headerImage.width * 0.5;
+    self.headerImage.layer.masksToBounds = YES;
+    
+    CGFloat rightViewX = CGRectGetMaxX(self.headerImage.frame) + 15;
+    self.rigthView.frame = CGRectMake(rightViewX, self.headerImage.y, self.contentView.width - rightViewX - 15, self.contentView.height - self.headerImage.y - mainSpacing15);
+    
+    self.nameLabel.frame = CGRectMake(0, 0, 0, 30);
+    [self.nameLabel sizeToFit];
+    self.nameLabel.width = self.rigthView.width;
+    
+    self.fansCountLabel.frame = CGRectMake(0, CGRectGetMaxY(self.nameLabel.frame), self.nameLabel.width, 20);
+    [self.fansCountLabel sizeToFit];
+    self.fansCountLabel.width = self.rigthView.width - 50;
+    
+    CGFloat rankW = [NSString returnStringRect:self.model.ranking size:CGSizeMake(self.contentView.width, CGFLOAT_MAX) font:[UIFont systemFontOfSize:ys_f30]].width;
+    self.rankLabel.frame = CGRectMake(self.contentView.width - rankW - mainSpacing15 - mainSpacing, 0, rankW, self.headerImage.height);
+    self.rankLabel.centerY = self.contentView.height * 0.5;
+    
+    self.crownImage.frame = CGRectMake(0, 0, 35, 25);
+    self.crownImage.centerX = self.headerImage.x + 5;
+    self.crownImage.centerY = self.headerImage.y - 3;
+}
+
+- (void)setModel:(RankModel *)model
+{
+    _model = model;
+    
+    [self.headerImage sd_setImageWithURL:[NSURL URLWithString:model.headpic] placeholderImage:[UIImage imageNamed:@"zwt_jiangshi_touxiang"]];
+    
+    if (model.myrank == 1) {
+        self.backImage.image = [UIImage imageNamed:@"paihangbang_bg_highlight"];
+    }else
+    {
+        self.backImage.image = [UIImage imageNamed:@"paihangbang_bg"];
+    }
+    
+    self.nameLabel.text = model.nickname;
+    self.fansCountLabel.text = [NSString stringWithFormat:@"%@",model.showDuration];
+    
+    self.rankLabel.text = model.ranking;
+}
+
+@end

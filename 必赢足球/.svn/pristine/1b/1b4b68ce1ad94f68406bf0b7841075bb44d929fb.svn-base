@@ -1,0 +1,256 @@
+//
+//  MessageNoticeController.m
+//  MoveSchool
+//
+//  Created by edz on 2017/7/26.
+//
+//
+
+#import "MessageNoticeController.h"
+#import "AFNetWW.h"
+#import "MessageModel.h"
+#import "MJExtension.h"
+#import "MessageTaskNoticeCell.h"
+#import "MJRefresh.h"
+#import "MainWebController.h"
+#import "CourseSpecialDetailViewController.h"
+#import "UIViewController+Extension.h"
+#import "MJChiBaoZiHeader.h"
+
+@interface MessageNoticeController ()<UITableViewDelegate, UITableViewDataSource>
+
+@property (nonatomic, strong) NSMutableArray *messageModels;
+
+@property (nonatomic, assign) BOOL isMoreData;
+
+@property (nonatomic, assign) int index;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, assign) BOOL hasRole;
+
+@end
+
+@implementation MessageNoticeController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.messageModels = [NSMutableArray array];
+
+    [self setUpData];
+}
+
+- (void) setUpData
+{
+    
+    NSString *url = [NSString stringWithFormat:@"%@%@?token=%@",NetHeader,GetMsgRecord,[UserInfoTool getUserInfo].token];
+    NSDictionary *Parameters=@{
+                               @"msgtype"  : @"2",
+                               @"index":[NSString stringWithFormat:@"%d",self.index],
+                               @"count":@"10"
+                               };
+    
+    [[AFNetWW sharedAFNetWorking] AFWithPostORGet:@"post" withURLStr:url WithParameters:Parameters success:^(id responseDic) {
+        
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+        
+        if ([self.delegate respondsToSelector:@selector(setRedNoticePoint:)]) {
+            [self.delegate setRedNoticePoint:[responseDic[@"data"][@"count"] intValue]];
+        }
+        
+        NSArray *models = [MessageModel objectArrayWithKeyValuesArray:responseDic[@"rows"]];
+        if (models.count > 0) {
+            if (self.isMoreData) {
+                [self.messageModels addObjectsFromArray:models];
+            }else
+            {
+                self.messageModels = (NSMutableArray *)models;
+            }
+            
+            [self.tableView reloadData];
+        }else if(self.isMoreData)
+        {
+            --self.index;
+            [MBProgressHUD showError:@"已加载全部信息"];
+            [self.tableView.mj_header endRefreshing];
+            [self.tableView.mj_footer endRefreshing];
+            return ;
+        }
+        
+        
+    } fail:^(NSError *error) {
+        [self.tableView.mj_header endRefreshing];
+        [self.tableView.mj_footer endRefreshing];
+        
+        [MBProgressHUD showText:[ManyLanguageMag getTipStrWith:@"网络错误"] inview:self.view];
+    }];
+}
+
+- (NSString *)titleForPagerTabStripViewController:(XLPagerTabStripViewController *)pagerTabStripViewController
+{
+    return @"通知";
+}
+
+- (void) setUpUI
+{
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    tableView.showsVerticalScrollIndicator = NO;
+    self.tableView = tableView;
+    tableView.y = self.hasRole ? 70 : 0;
+    tableView.height = self.hasRole ? self.view.height - 140: self.view.height - 70;
+    tableView.delegate = self;
+    tableView.dataSource = self;
+    [self.view addSubview:tableView];
+    
+    tableView.tableFooterView = [[UIView alloc] init];
+    
+    __weak __typeof(self) weakSelf = self;
+
+    // 设置回调（一旦进入刷新状态，就调用target的action，也就是调用self的loadNewData方法）
+    MJChiBaoZiHeader *header = [MJChiBaoZiHeader headerWithRefreshingTarget:self refreshingAction:@selector(headerRefresh)];
+    
+    // 隐藏时间
+    header.lastUpdatedTimeLabel.hidden = YES;
+    
+    // 隐藏状态
+    header.stateLabel.hidden = YES;
+    
+    // 设置header
+    self.tableView.mj_header = header;
+    
+    
+    //上拉加载更多 设置回调（一旦进入刷新状态就会调用这个refreshingBlock）
+    tableView.mj_footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+        weakSelf.isMoreData = YES;
+        ++weakSelf.index;
+        [weakSelf setUpData];
+    }];
+}
+
+#pragma mark 下拉刷新
+- (void) headerRefresh
+{
+    self.isMoreData = NO;
+    self.index = 0;
+    [self setUpData];
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.messageModels.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    static NSString *ID = @"cell";
+    MessageTaskNoticeCell *cell = [tableView dequeueReusableCellWithIdentifier:ID];
+    if (cell == nil) {
+        cell = [[MessageTaskNoticeCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
+    }
+    cell.type = Notice;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    MessageModel *model = self.messageModels[indexPath.row];
+    cell.model = model;
+    return cell;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    MessageModel *model = self.messageModels[indexPath.row];
+    return model.noticeInfoHeight + 50;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void)setTableViewHeight: (BOOL) hasRole
+{
+    self.hasRole = hasRole;
+    
+    [self setUpUI];
+
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    MessageModel *model = self.messageModels[indexPath.row];
+
+    //考试
+    if ([model.businesscode isEqualToString:testType]){
+        MainWebController *examController = [[MainWebController alloc] init];
+        NSString *str = [NSString stringWithFormat:@"%@%@?locale=%@&testid=%@",NetHeader,TestDesc,[ManyLanguageMag getTypeWithWebDiscript],model.businessid];
+        examController.url = str;
+        examController.webTitle = @"考试详情";
+        [self.navigationController pushViewController:examController animated:YES];
+    }else
+    
+    //沙龙
+    if ([model.businesscode isEqualToString:shalongType]) {
+        MainWebController *shalong = [[MainWebController alloc] init];
+        NSString *url = [NSString stringWithFormat:@"%@mh5/shalong/shalongdetail?id=%@&locale=%@",NetHeader,model.businessid,[ManyLanguageMag getTypeWithWebDiscript]];
+        shalong.url = url;
+        shalong.webTitle = @"沙龙详情";
+        [self.navigationController pushViewController:shalong animated:YES];
+    }else
+        
+    //问卷
+    if ([model.businesscode isEqualToString:voteType]) {
+        NSString *uelStr = [NSString stringWithFormat:@"%@mh5/vote/votetags?id=%@",NetHeader,model.businessid];
+        
+        MainWebController *vc = [[MainWebController alloc] init];
+        vc.url = uelStr;
+        vc.webTitle = [ManyLanguageMag getMineMenuStrWith:@"我的问卷"];
+        [self.navigationController pushViewController:vc animated:YES];
+    }else
+        
+    //专题
+    if ([model.businesscode isEqualToString:specialType]) {
+        CourseSpecialDetailViewController *vc = [[CourseSpecialDetailViewController alloc] init];
+        vc.ID = model.businessid;
+        [self.navigationController pushViewController:vc animated:YES];
+    }else
+        
+    //直播
+    if ([model.businesscode isEqualToString:liveType]) {
+        NSString *uelStr=[NSString stringWithFormat:@"%@%@?liveid=%@&appkey=%@&locale=%@",NetHeader,Liveplay,model.businessid,appkey,[ManyLanguageMag getTypeWithWebDiscript]];
+        
+        MainWebController *vc = [[MainWebController alloc] init];
+        vc.url = uelStr;
+        vc.title = @"直播详情";
+        [self.navigationController pushViewController:vc animated:YES];
+    }else
+    
+    //课程
+    if ([model.businesscode isEqualToString:courseType]) {
+        [self jumpToTypeContoller:self CourseId:model.businessid];
+    }else
+    
+    //资讯
+    if ([model.businesscode isEqualToString:newsType]) {
+        MainWebController *vc= [[MainWebController alloc] init];
+        NSString *uelStr = [NSString stringWithFormat:@"%@%@?id=%@&locale=%@",NetHeader,AdvisoryOnly,model.businessid,[ManyLanguageMag getTypeWithWebDiscript]];
+        vc.webTitle = @"资讯";
+        vc.url = uelStr;
+        [self.navigationController pushViewController:vc animated:YES];
+    }else
+    
+    //讲师
+    if ([model.businesscode isEqualToString:teacherType]) {
+        MainWebController *vc= [[MainWebController alloc] init];
+        NSString *uelStr = [NSString stringWithFormat:@"%@%@?id=%@",NetHeader,Teacher,model.businessid];
+        vc.webTitle = @"讲师详情";
+        vc.url = uelStr;
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+}
+
+@end
